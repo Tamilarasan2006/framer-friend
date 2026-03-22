@@ -1,3 +1,5 @@
+require('dotenv').config({ override: true });
+
 const express = require('express');
 const cors = require('cors');
 const compression = require('compression');
@@ -584,7 +586,7 @@ function getLanUrls(port) {
 async function startServer() {
     await initStorage();
 
-    app.listen(PORT, '0.0.0.0', () => {
+    const server = app.listen(PORT, '0.0.0.0', () => {
         console.log(`\n  Farmers Friend Server running at:`);
         console.log(`  -> http://localhost:${PORT}\n`);
         const lanUrls = getLanUrls(PORT);
@@ -607,6 +609,18 @@ async function startServer() {
             console.log(`  - cattle_diseases.json (Global cattle disease data)`);
         }
         console.log('');
+    });
+
+    server.on('error', (err) => {
+        if (err.code === 'EADDRINUSE') {
+            console.error(`\n  ❌ Port ${PORT} is already in use.`);
+            console.error(`  Stop the old server first, then restart.\n`);
+            console.error(`  Quick fix (PowerShell):`);
+            console.error(`    $pid = (netstat -ano | Select-String ":${PORT}.*LISTENING").ToString().Split(' ')[-1]; taskkill /PID $pid /F\n`);
+        } else {
+            console.error('  ❌ Server error:', err.message);
+        }
+        process.exit(1);
     });
 }
 

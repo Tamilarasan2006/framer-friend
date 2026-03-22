@@ -1,4 +1,4 @@
-# MongoDB Atlas + Render Deployment Guide
++# MongoDB Atlas + Render Deployment Guide
 
 ## 1) Create MongoDB Atlas Database
 
