@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Farmers Friend - Unified</title>
+    <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"></noscript>
+    <link rel="stylesheet" href="style.css">
+    <script src="mobile-config.js"></script>
+    <script src="seed-db.js"></script>
+</head>
+<body>
+
+    <header>
+        <h1>
+           <img src="image/logo.jpeg" alt="Farmers Friend Logo" class="header-logo">
+            <span id="header-title">FARMERS FRIEND</span>
+            <i class="fa-solid fa-tractor tractor-icon"></i>
+        </h1>
+<div class="profile-btn-top" onclick="showTab('profile', 'MY PROFILE', null)">
+            <img id="headerProfileImg" src="" alt="" style="display:none; width:100%; height:100%; border-radius:50%; object-fit:cover;">
+            <i class="fa-solid fa-user" id="headerProfileIcon" style="color: var(--header-text); font-size: 18px;"></i>
+        </div>
+    </header>
+
+    <!-- Floating Cart Button (bottom-right) -->
+    <div id="cartFab" class="cart-fab" onclick="toggleCartPanel()">
+        <i class="fa-solid fa-cart-shopping"></i>
+        <span id="cartBadge" class="cart-badge" style="display:none;">0</span>
+    </div>
+
+    <!-- Cart Slide-Out Panel -->
+    <div id="cartPanel" class="cart-panel">
+        <div class="cart-panel-header">
+            <h3><i class="fa-solid fa-cart-shopping"></i> My Cart</h3>
+            <button class="cart-close-btn" onclick="closeCartPanel()"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+
+        <div id="cartItemsSection">
+            <div id="cartEmpty" class="cart-empty">
+                <i class="fa-solid fa-basket-shopping" style="font-size:40px; color:#ccc;"></i>
+                <p>Your cart is empty</p>
+            </div>
+            <div id="cartItemsList" class="cart-items-list"></div>
+            <div id="cartFooter" class="cart-footer" style="display:none;">
+                <div class="cart-total-row">
+                    <span>Total</span>
+                    <span class="cart-total-amount">₹<span id="cartTotalPrice">0</span></span>
+                </div>
+                <button class="cart-pay-btn" onclick="showPaymentUI()">
+                    <i class="fa-solid fa-lock"></i> Proceed to Pay
+                </button>
+            </div>
+        </div>
+
+        <div id="cartPaymentSection" class="cart-payment" style="display:none;">
+            <h3><i class="fa-solid fa-credit-card"></i> Payment</h3>
+            <div id="payOrderSummary" class="pay-order-summary"></div>
+            <div class="pay-total-row">
+                <span>Items: <strong id="payItemCount">0</strong></span>
+                <span>Total: <strong>₹<span id="payAmount">0</span></strong></span>
+            </div>
+            <div class="pay-methods">
+                <label class="pay-method-option">
+                    <input type="radio" name="payMethod" value="upi" checked>
+                    <i class="fa-solid fa-mobile-screen"></i> UPI / Google Pay
+                </label>
+                <label class="pay-method-option">
+                    <input type="radio" name="payMethod" value="card">
+                    <i class="fa-solid fa-credit-card"></i> Credit / Debit Card
+                </label>
+                <label class="pay-method-option">
+                    <input type="radio" name="payMethod" value="cod">
+                    <i class="fa-solid fa-money-bill-wave"></i> Cash on Delivery
+                </label>
+                <label class="pay-method-option">
+                    <input type="radio" name="payMethod" value="netbanking">
+                    <i class="fa-solid fa-building-columns"></i> Net Banking
+                </label>
+            </div>
+            <button id="payNowBtn" class="cart-pay-btn" onclick="processPayment()" style="background:var(--btn-green);">
+                <i class="fa-solid fa-lock"></i> Pay Now
+            </button>
+            <button class="cart-cancel-btn" onclick="cancelPayment()">
+                <i class="fa-solid fa-arrow-left"></i> Back to Cart
+            </button>
+        </div>
+    </div>
+    <div id="cartOverlay" class="cart-overlay" onclick="closeCartPanelFromOverlay()"></div>
+
+    <!-- Crop Rates Slide-Up Panel -->
+    <div id="cropRatesOverlay" class="cart-overlay" onclick="closeCropRatesPanel()"></div>
+    <div id="cropRatesPanel" class="crop-rates-panel">
+        <div class="crop-rates-header">
+            <h3><i class="fa-solid fa-wheat-awn"></i> Market Crop Rates</h3>
+            <button class="cart-close-btn" onclick="closeCropRatesPanel()"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div style="padding:10px 16px 4px;display:flex;gap:8px;align-items:center;">
+            <div style="flex:1;position:relative;">
+                <i class="fa-solid fa-magnifying-glass" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:#aaa;font-size:13px;"></i>
+                <input type="text" id="cropRatesSearch" class="market-input" placeholder="Search crop (e.g. Paddy, Wheat...)" oninput="renderCropRatesPanel()" style="padding-left:32px;width:100%;">
+            </div>
+            <select id="cropRatesLocationFilter" onchange="renderCropRatesPanel()" class="market-input" style="max-width:130px;flex-shrink:0;"></select>
+        </div>
+        <div id="cropRatesList" class="crop-rates-list"></div>
+    </div>
+
+    <main id="viewport">
+        
+        <section id="home" class="section active">
+            <div class="dashboard-row">
+                <div class="dash-card card-green" onclick="showCropRatesPanel()" style="cursor:pointer;">
+                    <span class="dash-title">TODAY'S CROP RATES <i class="fa-solid fa-arrow-up-right-from-square" style="font-size:11px;opacity:0.8;"></i></span>
+                    <span class="crop-price" id="homeSingleCropName">PADDY (COMMON)</span>
+                    <span class="sub-text" id="homeSingleCropPrice">₹2,300 / QUINTAL</span>
+                    <span style="font-size:11px;opacity:0.75;display:block;margin-top:6px;">Tap to see all rates →</span>
+                </div>
+                <div class="dash-card card-blue">
+                    <span class="dash-title">MARKET PRICE TRENDS</span>
+                    <div class="graph-container">
+                        <div class="graph-line">
+                            <svg viewBox="0 0 100 50" preserveAspectRatio="none"><path d="M0,40 Q25,10 50,30 T100,10" /></svg>
+                        </div>
+                    </div>
+                    <span class="sub-text" style="font-size: 12px; font-weight: bold;">PADDY: + 2.5% &nbsp;&nbsp; SUGARCANE - 1.5%</span>
+                </div>
+            </div>
+
+            <div class="section-title">BEST SELLING PRODUCTS</div>
+            <div id="bestSellingList" class="product-grid"></div>
+        </section>
+
+       <section id="tools" class="section">
+            <div class="search-container">
+                <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                <input type="text" id="fertSearch" class="search-bar" placeholder="Search for fertilizers (e.g. Urea, Potash)..." onkeyup="debouncedFilterFert()">
+            </div>
+
+            <div class="lab-visual" style="margin-bottom: 20px;"></div>
+
+            <div class="market-toolbar">
+                <div class="section-title" style="margin-bottom:0;">Verified Fertilizer Catalog</div>
+                <select id="fertLocationFilter" class="market-input" style="max-width:180px;margin-right:8px;" onchange="filterByLocation('fert')">
+                    <option value="">All Locations</option>
+                </select>
+                <button id="fertAddButton" class="verify-btn market-add-btn" onclick="toggleFertilizerForm()">
+                    <i class="fa-solid fa-plus"></i> ADD FERTILIZER
+                </button>
+            </div>
+
+            <div id="fertForm" class="market-form hidden-form">
+                <h3><i class="fa-solid fa-flask" style="color:var(--lab-blue)"></i> Add Fertilizer</h3>
+                <div class="form-group">
+                    <label>FERTILIZER NAME</label>
+                    <input type="text" id="fertName" class="market-input" placeholder="e.g. Urea 46%">
+                </div>
+                <div class="form-group">
+                    <label>TYPE / NPK</label>
+                    <input type="text" id="fertType" class="market-input" placeholder="e.g. 46-0-0">
+                </div>
+                <div class="form-group">
+                    <label>BRAND / COMPANY</label>
+                    <input type="text" id="fertBrand" class="market-input" placeholder="e.g. IFFCO">
+                </div>
+                <div class="form-group">
+                    <label>PRODUCT IMAGE</label>
+                    <div class="image-upload-box" id="fertImageUploadBox">
+                        <div class="image-preview" id="fertImagePreview"></div>
+                        <div class="image-upload-actions">
+                            <label class="upload-btn">
+                                <i class="fa-solid fa-camera"></i> Camera
+                                <input type="file" accept="image/*" capture="environment" onchange="handleImageUpload(this, 'fertImage', 'fertImagePreview')" hidden>
+                            </label>
+                            <label class="upload-btn">
+                                <i class="fa-solid fa-image"></i> Gallery
+                                <input type="file" accept="image/*" onchange="handleImageUpload(this, 'fertImage', 'fertImagePreview')" hidden>
+                            </label>
+                            <button type="button" class="upload-btn url-toggle-btn" onclick="toggleUrlInput('fertImageUrlWrap')">
+                                <i class="fa-solid fa-link"></i> URL
+                            </button>
+                        </div>
+                        <div class="url-input-wrap" id="fertImageUrlWrap" style="display:none;">
+                            <input type="text" id="fertImage" class="market-input" placeholder="https://...">
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>PRICE</label>
+                    <input type="number" id="fertPrice" class="market-input" min="1" placeholder="e.g. 450">
+                </div>
+                <div class="form-group">
+                    <label>LOCATION</label>
+                    <input type="text" id="fertLocation" class="market-input" placeholder="e.g. Chennai">
+                </div>
+                <button class="verify-btn" onclick="addFertilizer()" style="width: 100%; background: var(--lab-blue);">SAVE FERTILIZER</button>
+            </div>
+
+            <div class="product-grid" id="fertGrid"></div>
+        </section>
+
+     <section id="market" class="section">
+            <div class="market-header-banner">
+                <div class="market-banner-text">
+                    <h2><i class="fa-solid fa-leaf"></i> Nature Market</h2>
+                    <p>Fresh from farm to your doorstep — 100% organic & verified</p>
+                </div>
+            </div>
+
+            <div class="market-toolbar">
+                <div class="market-search-wrap">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                    <input type="text" id="marketSearch" class="market-search-input" placeholder="Search products..." onkeyup="debouncedFilterMarket()">
+                </div>
+                <select id="marketLocationFilter" class="market-input" style="max-width:180px;margin-right:8px;" onchange="filterByLocation('market')">
+                    <option value="">All Locations</option>
+                </select>
+                <button id="marketAddButton" class="verify-btn market-add-btn" onclick="toggleProductForm()">
+                    <i class="fa-solid fa-plus"></i> ADD PRODUCT
+                </button>
+            </div>
+
+            <div id="marketForm" class="market-form hidden-form">
+                <h3><i class="fa-solid fa-basket-shopping" style="color:var(--nature-brown)"></i> Add Product</h3>
+                <div class="form-group">
+                    <label>PRODUCT NAME</label>
+                    <input type="text" id="productName" class="market-input" placeholder="e.g. Organic Groundnut">
+                </div>
+                <div class="form-group">
+                    <label>PRODUCT INFORMATION</label>
+                    <input type="text" id="productInfo" class="market-input" placeholder="e.g. Chemical-free, freshly harvested">
+                </div>
+                <div class="form-group">
+                    <label>HOLDER NAME OR ID</label>
+                    <input type="text" id="holderName" class="market-input" placeholder="e.g. Lenin S / F93798012">
+                </div>
+                <div class="form-group">
+                    <label>PHONE NUMBER</label>
+                    <input type="text" id="holderPhone" class="market-input" placeholder="e.g. 9876543210">
+                </div>
+                <div class="form-group">
+                    <label>LOCATION</label>
+                    <input type="text" id="productLocation" class="market-input" placeholder="e.g. Coimbatore">
+                </div>
+                <div class="form-group">
+                    <label>PRODUCT IMAGE</label>
+                    <div class="image-upload-box" id="productImageUploadBox">
+                        <div class="image-preview" id="productImagePreview"></div>
+                        <div class="image-upload-actions">
+                            <label class="upload-btn">
+                                <i class="fa-solid fa-camera"></i> Camera
+                                <input type="file" accept="image/*" capture="environment" onchange="handleImageUpload(this, 'productImage', 'productImagePreview')" hidden>
+                            </label>
+                            <label class="upload-btn">
+                                <i class="fa-solid fa-image"></i> Gallery
+                                <input type="file" accept="image/*" onchange="handleImageUpload(this, 'productImage', 'productImagePreview')" hidden>
+                            </label>
+                            <button type="button" class="upload-btn url-toggle-btn" onclick="toggleUrlInput('productImageUrlWrap')">
+                                <i class="fa-solid fa-link"></i> URL
+                            </button>
+                        </div>
+                        <div class="url-input-wrap" id="productImageUrlWrap" style="display:none;">
+                            <input type="text" id="productImage" class="market-input" placeholder="https://...">
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>PRICE (MIN 100G)</label>
+                    <input type="number" id="pricePer100g" class="market-input" min="1" placeholder="e.g. 200">
+                </div>
+                <div class="form-group">
+                    <label>MIN QUANTITY (G)</label>
+                    <input type="number" id="minQuantity" class="market-input" min="50" step="50" placeholder="e.g. 100">
+                </div>
+                <div class="form-group">
+                    <label>UNIT</label>
+                    <select id="productUnit" class="market-input">
+                        <option value="g">Gram (g)</option>
+                        <option value="kg">Kilogram (kg)</option>
+                    </select>
+                </div>
+                <button class="verify-btn" onclick="addMarketProduct()" style="width: 100%; background: var(--nature-brown);">SAVE PRODUCT</button>
+            </div>
+
+            <div class="section-title"><i class="fa-solid fa-store"></i> Active Market Listings</div>
+            <div id="marketProductList" class="market-grid-new"></div>
+</section>
+
+        <section id="cattle" class="section">
+
+            <!-- Sub-navigation tabs for cattle page -->
+            <div class="cattle-tabs">
+                <button class="cattle-tab active" onclick="showCattleSubTab('cattle-overview', this)">
+                    <i class="fa-solid fa-cow"></i> Overview
+                </button>
+                <button class="cattle-tab" onclick="showCattleSubTab('cattle-doctor', this)">
+                    <i class="fa-solid fa-user-doctor"></i> Doctor
+                </button>
+                <button class="cattle-tab" onclick="showCattleSubTab('cattle-ai', this)">
+                    <i class="fa-solid fa-robot"></i> AI Doctor
+                </button>
+                <button class="cattle-tab" onclick="showCattleSubTab('cattle-feeds', this)">
+                    <i class="fa-solid fa-wheat-awn"></i> Feeds
+                </button>
+                <button class="cattle-tab" onclick="showCattleSubTab('cattle-products', this)">
+                    <i class="fa-solid fa-bottle-droplet"></i> Products
+                </button>
+            </div>
+
+            <!-- ===== OVERVIEW SUB-TAB ===== -->
+            <div id="cattle-overview" class="cattle-sub active">
+                <div class="cattle-stats-row">
+                    <div class="cattle-stat-card" style="border-left: 4px solid var(--medical-red);">
+                        <i class="fa-solid fa-heart-pulse" style="color:var(--medical-red);font-size:24px;"></i>
+                        <div><span class="cattle-stat-number">24/7</span><span class="cattle-stat-label">Vet Support</span></div>
+                    </div>
+                    <div class="cattle-stat-card" style="border-left: 4px solid var(--card-green);">
+                        <i class="fa-solid fa-wheat-awn" style="color:var(--card-green);font-size:24px;"></i>
+                        <div><span class="cattle-stat-number">50+</span><span class="cattle-stat-label">Feed Products</span></div>
+                    </div>
+                    <div class="cattle-stat-card" style="border-left: 4px solid var(--card-blue);">
+                        <i class="fa-solid fa-robot" style="color:var(--card-blue);font-size:24px;"></i>
+                        <div><span class="cattle-stat-number">AI</span><span class="cattle-stat-label">Smart Diagnosis</span></div>
+                    </div>
+                </div>
+
+                <div class="section-title">Health Certified Livestock</div>
+                <div class="product-grid">
+                    <div class="product-card medical-card">
+                        <i class="fa-solid fa-paw" style="color:var(--medical-red); float:right"></i>
+                        <img src="https://images.unsplash.com/photo-1546445317-29f4545e9d53?w=200" class="product-img" loading="lazy">
+                        <span class="prod-name">HF Cow (Healthy)</span>
+                        <span class="prod-price">₹65,000</span>
+                    </div>
+                    <div class="product-card medical-card">
+                        <i class="fa-solid fa-paw" style="color:var(--medical-red); float:right"></i>
+                        <img src="https://images.unsplash.com/photo-1570042225831-d98fa7577f1e?w=200" class="product-img" loading="lazy">
+                        <span class="prod-name">Jersey Cow</span>
+                        <span class="prod-price">₹55,000</span>
+                    </div>
+                    <div class="product-card medical-card">
+                        <i class="fa-solid fa-paw" style="color:var(--medical-red); float:right"></i>
+                        <img src="https://images.unsplash.com/photo-1593179528968-a17e5e0f9d67?w=200" class="product-img" loading="lazy">
+                        <span class="prod-name">Murrah Buffalo</span>
+                        <span class="prod-price">₹80,000</span>
+                    </div>
+                    <div class="product-card medical-card">
+                        <i class="fa-solid fa-paw" style="color:var(--medical-red); float:right"></i>
+                        <img src="https://images.unsplash.com/photo-1612444530582-fc66f5dbf601?w=200" class="product-img" loading="lazy">
+                        <span class="prod-name">Gir Cow</span>
+                        <span class="prod-price">₹45,000</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ===== DOCTOR CONSULT SUB-TAB ===== -->
+            <div id="cattle-doctor" class="cattle-sub">
+                <div class="section-title">Veterinary Doctor Consultation</div>
+
+                <div class="market-toolbar" style="margin-bottom:15px;">
+                    <select id="doctorLocationFilter" class="market-input" style="max-width:200px;" onchange="filterByLocation('doctor')">
+                        <option value="">All Locations</option>
+                    </select>
+                </div>
+
+                <!-- Doctors loaded from server database -->
+                <div id="doctorListFromDB" class="doctor-db-grid"></div>
+
+                <div class="section-title" style="margin-top:30px;">Emergency Helpline</div>
+                <div class="emergency-box">
+                    <i class="fa-solid fa-phone-volume" style="font-size:28px; color:var(--medical-red);"></i>
+                    <div>
+                        <h3 style="margin:0;">24/7 Veterinary Emergency</h3>
+                        <p style="margin:4px 0; font-size:13px; color:#666;">Call now for immediate cattle health emergencies</p>
+                        <a href="tel:18001801515" class="emergency-link"><i class="fa-solid fa-phone"></i> 1800-180-1515 (Toll-Free)</a>
+                    </div>
+                </div>
+
+                <!-- Disease Database Section -->
+                <div class="section-title" style="margin-top:30px;">
+                    <i class="fa-solid fa-viruses"></i> Cattle Disease Database
+                </div>
+                <div style="display:flex; gap:10px; align-items:center; margin-bottom:15px;">
+                    <label><strong>Animal Type:</strong></label>
+                    <select id="diseaseAnimalType" class="market-input" style="width:auto;" onchange="showCattleDiseases()">
+                        <option value="cow">Cow</option>
+                        <option value="buffalo">Buffalo</option>
+                        <option value="goat">Goat</option>
+                        <option value="sheep">Sheep</option>
+                        <option value="poultry">Poultry</option>
+                    </select>
+                </div>
+                <div id="diseaseListFromDB" class="disease-db-grid"></div>
+            </div>
+
+            <!-- ===== AI DOCTOR SUB-TAB ===== -->
+            <div id="cattle-ai" class="cattle-sub">
+                <div class="ai-doctor-container">
+                    <div class="ai-header">
+                        <div class="ai-avatar"><i class="fa-solid fa-robot"></i></div>
+                        <div style="flex:1;">
+                            <h3 style="margin:0;">AI Cattle Doctor</h3>
+                            <p style="margin:2px 0; font-size:11px; opacity:0.8;">Ask anything about your animals</p>
+                        </div>
+                        <button class="ai-clear-btn" onclick="clearAIChat()" title="Clear chat"><i class="fa-solid fa-broom"></i></button>
+                    </div>
+
+                    <div class="ai-quick-topics">
+                        <button class="ai-topic-btn" onclick="askAIDoctor('disease')"><i class="fa-solid fa-virus"></i> Diseases</button>
+                        <button class="ai-topic-btn" onclick="askAIDoctor('feeding')"><i class="fa-solid fa-bowl-food"></i> Feeding</button>
+                        <button class="ai-topic-btn" onclick="askAIDoctor('maintenance')"><i class="fa-solid fa-shield-heart"></i> Care</button>
+                        <button class="ai-topic-btn" onclick="askAIDoctor('breeding')"><i class="fa-solid fa-heart"></i> Breeding</button>
+                        <button class="ai-topic-btn" onclick="askAIDoctor('vaccination')"><i class="fa-solid fa-syringe"></i> Vaccines</button>
+                        <button class="ai-topic-btn" onclick="askAIDoctor('milk')"><i class="fa-solid fa-glass-water"></i> Milk/Eggs</button>
+                    </div>
+
+                    <div class="ai-chat-box" id="aiChatBox">
+                        <div class="ai-message bot">
+                            <i class="fa-solid fa-robot ai-msg-icon"></i>
+                            <div class="ai-msg-bubble">Hello! I'm your AI Cattle Doctor. Select a topic or describe your animal's symptoms below.</div>
+                        </div>
+                    </div>
+
+                    <div class="ai-input-area">
+                        <select id="aiCattleType" class="ai-select">
+                            <option value="cow">🐄 Cow</option>
+                            <option value="buffalo">🐃 Buffalo</option>
+                            <option value="goat">🐐 Goat</option>
+                            <option value="sheep">🐑 Sheep</option>
+                            <option value="poultry">🐔 Poultry</option>
+                        </select>
+                        <input type="text" id="aiQuestion" class="ai-input" placeholder="e.g. my cow has fever..." onkeydown="if(event.key==='Enter')sendAIQuestion()">
+                        <button class="verify-btn ai-send-btn" onclick="sendAIQuestion()"><i class="fa-solid fa-paper-plane"></i></button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ===== CATTLE FEEDS SUB-TAB ===== -->
+            <div id="cattle-feeds" class="cattle-sub">
+                <div class="search-container">
+                    <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                    <input type="text" id="feedSearch" class="search-bar" placeholder="Search for cattle feeds (e.g. Hay, Silage, Pellets)..." onkeyup="filterCattleFeeds()">
+                </div>
+
+                <div class="market-toolbar">
+                    <div class="section-title" style="margin-bottom:0;">Cattle Feed Store</div>
+                    <select id="feedLocationFilter" class="market-input" style="max-width:180px;margin-right:8px;" onchange="filterByLocation('feed')">
+                        <option value="">All Locations</option>
+                    </select>
+                    <button id="feedAddButton" class="verify-btn market-add-btn" style="background:var(--card-green)" onclick="toggleFeedForm()">
+                        <i class="fa-solid fa-plus"></i> ADD FEED
+                    </button>
+                </div>
+
+                <div id="feedForm" class="market-form hidden-form" style="border-top-color: var(--card-green);">
+                    <h3><i class="fa-solid fa-wheat-awn" style="color:var(--card-green)"></i> Add Cattle Feed</h3>
+                    <div class="form-group">
+                        <label>FEED NAME</label>
+                        <input type="text" id="feedName" class="market-input" placeholder="e.g. Premium Cattle Feed Pellets">
+                    </div>
+                    <div class="form-group">
+                        <label>FEED TYPE</label>
+                        <select id="feedType" class="market-input">
+                            <option value="Dry Feed">Dry Feed</option>
+                            <option value="Green Feed">Green Feed</option>
+                            <option value="Concentrate">Concentrate</option>
+                            <option value="Mineral Mix">Mineral Mix</option>
+                            <option value="Silage">Silage</option>
+                            <option value="Supplement">Supplement</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>BRAND</label>
+                        <input type="text" id="feedBrand" class="market-input" placeholder="e.g. Amul, Heritage">
+                    </div>
+                    <div class="form-group">
+                        <label>WEIGHT (KG)</label>
+                        <input type="number" id="feedWeight" class="market-input" min="1" placeholder="e.g. 50">
+                    </div>
+                    <div class="form-group">
+                        <label>PRICE (₹)</label>
+                        <input type="number" id="feedPrice" class="market-input" min="1" placeholder="e.g. 850">
+                    </div>
+                    <div class="form-group">
+                        <label>PRODUCT IMAGE</label>
+                        <div class="image-upload-box" id="feedImageUploadBox">
+                            <div class="image-preview" id="feedImagePreview"></div>
+                            <div class="image-upload-actions">
+                                <label class="upload-btn">
+                                    <i class="fa-solid fa-camera"></i> Camera
+                                    <input type="file" accept="image/*" capture="environment" onchange="handleImageUpload(this, 'feedImage', 'feedImagePreview')" hidden>
+                                </label>
+                                <label class="upload-btn">
+                                    <i class="fa-solid fa-image"></i> Gallery
+                                    <input type="file" accept="image/*" onchange="handleImageUpload(this, 'feedImage', 'feedImagePreview')" hidden>
+                                </label>
+                                <button type="button" class="upload-btn url-toggle-btn" onclick="toggleUrlInput('feedImageUrlWrap')">
+                                    <i class="fa-solid fa-link"></i> URL
+                                </button>
+                            </div>
+                            <div class="url-input-wrap" id="feedImageUrlWrap" style="display:none;">
+                                <input type="text" id="feedImage" class="market-input" placeholder="https://...">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>LOCATION</label>
+                        <input type="text" id="feedLocation" class="market-input" placeholder="e.g. Madurai">
+                    </div>
+                    <button class="verify-btn" onclick="addCattleFeed()" style="width:100%; background:var(--card-green);">SAVE FEED</button>
+                </div>
+
+                <div class="product-grid" id="feedGrid"></div>
+            </div>
+
+            <!-- ===== CATTLE PRODUCTS (MILK, MEAT, EGGS) SUB-TAB ===== -->
+            <div id="cattle-products" class="cattle-sub">
+                <div class="search-container">
+                    <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                    <input type="text" id="cattleProductSearch" class="search-bar" placeholder="Search products (e.g. Milk, Eggs, Meat)..." onkeyup="filterCattleProducts()">
+                </div>
+
+                <div class="market-toolbar">
+                    <div class="section-title" style="margin-bottom:0;">Cattle Products Marketplace</div>
+                    <select id="cattleProductLocationFilter" class="market-input" style="max-width:180px;margin-right:8px;" onchange="filterByLocation('cattleProduct')">
+                        <option value="">All Locations</option>
+                    </select>
+                    <button id="cattleProductAddBtn" class="verify-btn market-add-btn" style="background:var(--nature-brown)" onclick="toggleCattleProductForm()">
+                        <i class="fa-solid fa-plus"></i> SELL PRODUCT
+                    </button>
+                </div>
+
+                <div id="cattleProductForm" class="market-form hidden-form">
+                    <h3><i class="fa-solid fa-bottle-droplet" style="color:var(--nature-brown)"></i> Sell Cattle Product</h3>
+                    <div class="form-group">
+                        <label>PRODUCT NAME</label>
+                        <input type="text" id="cpName" class="market-input" placeholder="e.g. Fresh Cow Milk">
+                    </div>
+                    <div class="form-group">
+                        <label>CATEGORY</label>
+                        <select id="cpCategory" class="market-input">
+                            <option value="Milk">🥛 Milk</option>
+                            <option value="Meat">🥩 Meat</option>
+                            <option value="Eggs">🥚 Eggs</option>
+                            <option value="Ghee">🧈 Ghee</option>
+                            <option value="Curd">🍶 Curd / Yogurt</option>
+                            <option value="Paneer">🧀 Paneer / Cheese</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>DESCRIPTION</label>
+                        <input type="text" id="cpInfo" class="market-input" placeholder="e.g. Fresh, organic, no preservatives">
+                    </div>
+                    <div class="form-group">
+                        <label>SELLER NAME</label>
+                        <input type="text" id="cpSeller" class="market-input" placeholder="e.g. Rajan Farm">
+                    </div>
+                    <div class="form-group">
+                        <label>PHONE</label>
+                        <input type="text" id="cpPhone" class="market-input" placeholder="e.g. 9876543210">
+                    </div>
+                    <div class="form-group">
+                        <label>PRICE</label>
+                        <input type="number" id="cpPrice" class="market-input" min="1" placeholder="e.g. 60">
+                    </div>
+                    <div class="form-group">
+                        <label>UNIT</label>
+                        <select id="cpUnit" class="market-input">
+                            <option value="per litre">Per Litre</option>
+                            <option value="per kg">Per Kg</option>
+                            <option value="per dozen">Per Dozen</option>
+                            <option value="per piece">Per Piece</option>
+                            <option value="per 500g">Per 500g</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>PRODUCT IMAGE</label>
+                        <div class="image-upload-box" id="cpImageUploadBox">
+                            <div class="image-preview" id="cpImagePreview"></div>
+                            <div class="image-upload-actions">
+                                <label class="upload-btn">
+                                    <i class="fa-solid fa-camera"></i> Camera
+                                    <input type="file" accept="image/*" capture="environment" onchange="handleImageUpload(this, 'cpImage', 'cpImagePreview')" hidden>
+                                </label>
+                                <label class="upload-btn">
+                                    <i class="fa-solid fa-image"></i> Gallery
+                                    <input type="file" accept="image/*" onchange="handleImageUpload(this, 'cpImage', 'cpImagePreview')" hidden>
+                                </label>
+                                <button type="button" class="upload-btn url-toggle-btn" onclick="toggleUrlInput('cpImageUrlWrap')">
+                                    <i class="fa-solid fa-link"></i> URL
+                                </button>
+                            </div>
+                            <div class="url-input-wrap" id="cpImageUrlWrap" style="display:none;">
+                                <input type="text" id="cpImage" class="market-input" placeholder="https://...">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>LOCATION</label>
+                        <input type="text" id="cpLocation" class="market-input" placeholder="e.g. Salem">
+                    </div>
+                    <button class="verify-btn" onclick="addCattleProduct()" style="width:100%; background:var(--nature-brown);">LIST PRODUCT</button>
+                </div>
+
+                <!-- Category filter buttons -->
+                <div class="cp-category-filter">
+                    <button class="cp-filter-btn active" onclick="filterCattleProductsByCategory('all', this)">All</button>
+                    <button class="cp-filter-btn" onclick="filterCattleProductsByCategory('Milk', this)">🥛 Milk</button>
+                    <button class="cp-filter-btn" onclick="filterCattleProductsByCategory('Meat', this)">🥩 Meat</button>
+                    <button class="cp-filter-btn" onclick="filterCattleProductsByCategory('Eggs', this)">🥚 Eggs</button>
+                    <button class="cp-filter-btn" onclick="filterCattleProductsByCategory('Ghee', this)">🧈 Ghee</button>
+                    <button class="cp-filter-btn" onclick="filterCattleProductsByCategory('Curd', this)">🍶 Curd</button>
+                    <button class="cp-filter-btn" onclick="filterCattleProductsByCategory('Paneer', this)">🧀 Paneer</button>
+                </div>
+
+                <div class="product-grid" id="cattleProductGrid"></div>
+            </div>
+
+        </section>
+        <section id="profile" class="section">
+            <div class="profile-card">
+                <div class="profile-hero">
+                    <div class="profile-img-large" id="profileAvatar" onclick="document.getElementById('profileImageInput').click()">
+                        <i class="fa-solid fa-user" id="profileAvatarIcon"></i>
+                        <img id="profileAvatarImg" src="" alt="" style="display:none;">
+                        <div class="profile-img-overlay"><i class="fa-solid fa-camera"></i></div>
+                    </div>
+                    <input type="file" id="profileImageInput" accept="image/*" capture="environment" style="display:none;" onchange="uploadProfileImage(this)">
+                    <h2 id="profileName" style="margin:0">User</h2>
+                    <p id="profileId" style="opacity: 0.8; margin: 5px 0;">ID: -</p>
+                    <p id="profileRole" class="profile-role">Role: -</p>
+                </div>
+                <div class="profile-stats">
+                    <div class="stat-box">
+                        <span id="profileAcres">0</span>
+                        <label id="profileAcresLabel">Acres</label>
+                    </div>
+                    <div class="stat-box">
+                        <span id="profileSales">0</span>
+                        <label id="profileSalesLabel">Sales</label>
+                    </div>
+                    <div class="stat-box">
+                        <span id="profileRevenue">₹0</span>
+                        <label id="profileRevenueLabel">Revenue</label>
+                    </div>
+                </div>
+                <div class="profile-info">
+                    <div class="info-row"><span>Phone</span><strong id="profilePhone">-</strong></div>
+                    <div class="info-row"><span>Location</span><strong id="profileLocation">-</strong></div>
+                </div>
+                <div class="profile-role-blocks">
+                    <div id="userProfileBlock" class="role-block">
+                        <h4>Buyer Overview</h4>
+                        <div class="info-row"><span>Viewed Products</span><strong id="userViewedCount">0</strong></div>
+                        <div class="info-row"><span>Purchases</span><strong id="userPurchaseCount">0</strong></div>
+                    </div>
+                    <div id="sellerProfileBlock" class="role-block">
+                        <h4>Seller Overview</h4>
+                        <div class="info-row"><span>Listings</span><strong id="sellerListingCount">0</strong></div>
+                        <div class="info-row"><span>Orders</span><strong id="sellerOrderCount">0</strong></div>
+                        <div class="info-row"><span>Avg Rating</span><strong id="sellerAvgRating">0</strong></div>
+                    </div>
+                    <div id="adminProfileBlock" class="role-block">
+                        <h4>Admin Overview</h4>
+                        <div class="info-row"><span>Total Listings</span><strong id="adminListingCount">0</strong></div>
+                        <div class="info-row"><span>Total Fertilizers</span><strong id="adminFertCount">0</strong></div>
+                        <div class="info-row"><span>Registered Users</span><strong id="adminUserCount">0</strong></div>
+                        <button class="verify-btn" style="margin-top:10px; background:var(--lab-blue); width:100%;" onclick="downloadUsersAsExcel()">
+                            <i class="fa-solid fa-file-excel"></i> Download Users (Excel)
+                        </button>
+                    </div>
+                </div>
+                <div class="profile-edit">
+                    <h3>Edit Profile</h3>
+                    <div class="form-group">
+                        <label>FULL NAME</label>
+                        <input type="text" id="profileNameInput" class="market-input" placeholder="Enter name">
+                    </div>
+                    <div class="form-group">
+                        <label>PHONE</label>
+                        <input type="text" id="profilePhoneInput" class="market-input" placeholder="Enter phone">
+                    </div>
+                    <div class="form-group">
+                        <label>LOCATION</label>
+                        <input type="text" id="profileLocationInput" class="market-input" placeholder="Enter location">
+                    </div>
+                    <div class="form-group">
+                        <label>ACRES</label>
+                        <input type="number" id="profileAcresInput" class="market-input" min="0" step="0.5" placeholder="e.g. 4.5">
+                    </div>
+                    <button class="verify-btn" onclick="saveProfileFromForm()">SAVE PROFILE</button>
+                </div>
+                <div class="profile-menu">
+                    <div class="menu-item"><i class="fa-solid fa-file-invoice-dollar"></i> My Transactions</div>
+                    <div class="menu-item"><i class="fa-solid fa-map-location-dot"></i> Land Records</div>
+                    <div class="menu-item"><i class="fa-solid fa-gear"></i> App Settings</div>
+                    <div class="menu-item" style="color:var(--medical-red)" onclick="logout()"><i class="fa-solid fa-right-from-bracket"></i> Logout</div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <div class="bottom-panel">
+        <div class="weather-box">
+            <div class="weather-text">
+                <div>WEATHER & AI</div>
+                <div class="weather-temp"><i class="fa-solid fa-cloud-sun" style="color: #f9a825;"></i> 29°C, SUNNY</div>
+            </div>
+        </div>
+
+        <div class="nav-center">
+            <button class="nav-btn active" onclick="showTab('home', 'FARMERS FRONT', this)">
+                <i class="fa-solid fa-house"></i><span>HOME</span>
+            </button>
+            <button class="nav-btn" onclick="showTab('tools', 'LAB & TOOLS', this)">
+                <i class="fa-solid fa-flask"></i><span>FERTILIZERS</span>
+            </button>
+            <button class="nav-btn" onclick="showTab('market', 'NATURE MARKET', this)">
+                <i class="fa-solid fa-tree"></i><span>MARKET</span>
+            </button>
+            <button class="nav-btn" onclick="showTab('cattle', 'VET CARE', this)">
+                <i class="fa-solid fa-stethoscope"></i><span>CATTLE</span>
+            </button>
+        </div>
+
+        <div class="broker-box">
+            <span class="broker-label">CROPS BROKER ID</span>
+            <div class="broker-input-wrapper">
+                <input type="text" class="broker-input" placeholder="ID: F93798012">
+                <button class="verify-btn">VERIFY</button>
+            </div>
+        </div>
+    </div>
+
+
+    <script src="api.js" defer></script>
+    <script src="script.js" defer></script>
+</body>
+
+</html>

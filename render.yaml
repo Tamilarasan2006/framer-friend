@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: farmersfriend-api
+    env: node
+    plan: free
+    autoDeploy: true
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: MONGO_URI
+        sync: false
+      - key: DATA_GOV_API_KEY
+        sync: false

@@ -1,0 +1,26 @@
+[
+  {
+    "userId": "arun0033",
+    "name": "arun",
+    "email": "arun902597@gmail.com",
+    "role": "user",
+    "password": "arun@2006",
+    "registeredAt": "2026-03-11T09:36:47.556Z"
+  },
+  {
+    "userId": "monesh",
+    "name": "monesh",
+    "email": "example4014@gmail.com",
+    "role": "seller",
+    "password": "Monesh@2006",
+    "registeredAt": "2026-03-11T09:39:22.108Z"
+  },
+  {
+    "userId": "Vicky08",
+    "name": "Vicky",
+    "email": "vicky@123gmail.com",
+    "role": "user",
+    "password": "vickyNs",
+    "registeredAt": "2026-03-19T15:00:53.431Z"
+  }
+]

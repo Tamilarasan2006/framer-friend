@@ -1,0 +1,47 @@
+[
+  {
+    "id": "f1773932641410",
+    "name": "Potas",
+    "type": "45-00-7",
+    "brand": "IFFCO",
+    "image": "image/uploads/1773932591454-e4f876e7.jpg",
+    "location": "Kallakurichi",
+    "price": "500"
+  },
+  {
+    "id": "f1",
+    "name": "Urea 46% Nitrogen",
+    "type": "46-0-0",
+    "brand": "IFFCO",
+    "location": "Coimbatore",
+    "image": "https://images.unsplash.com/photo-1628352081506-83c43123ed6d?w=200",
+    "price": "450"
+  },
+  {
+    "id": "f2",
+    "name": "DAP Fertilizer",
+    "type": "18-46-0",
+    "brand": "KRIBHCO",
+    "location": "Chennai",
+    "image": "image/dap-fertilizer.jpg",
+    "price": "1350"
+  },
+  {
+    "id": "f3",
+    "name": "MOP (Potash)",
+    "type": "0-0-60",
+    "brand": "NFL",
+    "location": "Madurai",
+    "image": "image/mop.jpg",
+    "price": "850"
+  },
+  {
+    "id": "f4",
+    "name": "Organic Compost",
+    "type": "Natural",
+    "brand": "Local",
+    "location": "Salem",
+    "image": "image/Organic_Compost.jpg",
+    "price": "220"
+  }
+]

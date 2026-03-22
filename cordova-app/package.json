@@ -1,0 +1,25 @@
+{
+  "name": "farmersfriend-cordova",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Cordova wrapper for Farmers Friend",
+  "scripts": {
+    "prepare:web": "node ../scripts/sync-cordova-www.js",
+    "assets:prepare": "node ../scripts/generate-cordova-assets.js",
+    "assets:android": "npm run assets:prepare && npx cordova-res android --copy",
+    "android:prebuild": "npm run prepare:web && npm run assets:android && node ../scripts/clean-cordova-android-icons.js",
+    "android:add": "npm run prepare:web && npx cordova platform add android",
+    "android:build": "npm run android:prebuild && npx cordova build android",
+    "android:run": "npm run android:prebuild && npx cordova run android"
+  },
+  "devDependencies": {
+    "cordova": "^12.0.0",
+    "cordova-android": "^13.0.0",
+    "cordova-res": "^0.15.4"
+  },
+  "cordova": {
+    "platforms": [
+      "android"
+    ]
+  }
+}

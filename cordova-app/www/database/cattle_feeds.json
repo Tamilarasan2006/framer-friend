@@ -1,0 +1,8 @@
+[
+    { "id": "cf1", "name": "Premium Cattle Pellets", "type": "Concentrate", "brand": "Amul", "location": "Coimbatore", "weight": "50", "price": "1200", "image": "https://images.unsplash.com/photo-1560493676-04071c5f467b?w=200" },
+    { "id": "cf2", "name": "Hay Bale (Mixed Grass)", "type": "Dry Feed", "brand": "Local", "location": "Madurai", "weight": "25", "price": "350", "image": "https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=200" },
+    { "id": "cf3", "name": "Mineral Mixture Plus", "type": "Mineral Mix", "brand": "Heritage", "location": "Chennai", "weight": "5", "price": "480", "image": "https://images.unsplash.com/photo-1586201375761-83865001e31c?w=200" },
+    { "id": "cf4", "name": "Maize Silage Pack", "type": "Silage", "brand": "AgroFeed", "location": "Erode", "weight": "40", "price": "650", "image": "https://images.unsplash.com/photo-1625246333195-78d9c38ad449?w=200" },
+    { "id": "cf5", "name": "Soybean Meal", "type": "Concentrate", "brand": "NutriFeed", "location": "Salem", "weight": "30", "price": "900", "image": "https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=200" },
+    { "id": "cf6", "name": "Rice Bran (De-oiled)", "type": "Supplement", "brand": "FarmBest", "location": "Thanjavur", "weight": "40", "price": "550", "image": "https://images.unsplash.com/photo-1536054953991-59609f913e9e?w=200" }
+]

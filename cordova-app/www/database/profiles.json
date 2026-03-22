@@ -1,0 +1,20 @@
+{
+  "Tamil": {
+    "name": "Admin",
+    "phone": "",
+    "location": "",
+    "acres": "0",
+    "sales": "0",
+    "revenue": "₹0",
+    "profileImage": "image/uploads/1773302803613-ecbbe088.jpg"
+  },
+  "testUser": {
+    "name": "Test",
+    "location": "Chennai",
+    "phone": "9999999999"
+  },
+  "testUser2": {
+    "name": "SpeedTest",
+    "location": "Madurai"
+  }
+}

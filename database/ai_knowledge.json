@@ -1,0 +1,328 @@
+{
+  "disease": {
+    "cow": {
+      "title": "Common Cow Diseases & Treatment",
+      "points": [
+        "<b>Foot-and-Mouth Disease (FMD):</b> Symptoms include fever, blisters on mouth/feet. Vaccinate every 6 months. Isolate infected animals immediately.",
+        "<b>Mastitis:</b> Swollen udder, abnormal milk. Maintain udder hygiene, use teat dip after milking. Consult vet for antibiotics.",
+        "<b>Bloat:</b> Swollen left abdomen, difficulty breathing. Avoid sudden diet changes. Use anti-bloat oil. Emergency: use trocar for severe cases.",
+        "<b>Brucellosis:</b> Causes abortion, reduced milk. Test regularly (Rose Bengal test). Vaccinate calves at 4-8 months.",
+        "<b>Black Quarter (BQ):</b> Sudden lameness, swelling in muscles, high fever. Vaccinate annually. Requires immediate penicillin treatment."
+      ]
+    },
+    "buffalo": {
+      "title": "Common Buffalo Diseases & Treatment",
+      "points": [
+        "<b>Hemorrhagic Septicemia (HS):</b> High fever, swollen throat, sudden death. Vaccinate before monsoon season.",
+        "<b>Mastitis:</b> Similar to cows. Clean milking practices are essential. Dry cow therapy recommended.",
+        "<b>Parasitic infections:</b> Regular deworming every 3 months. Use Ivermectin or Albendazole.",
+        "<b>Foot Rot:</b> Lameness, foul smell. Keep floors clean and dry. Copper sulfate foot bath helps.",
+        "<b>Theileriosis:</b> Tick-borne, causes fever and anemia. Use acaricides for tick control."
+      ]
+    },
+    "goat": {
+      "title": "Common Goat Diseases & Treatment",
+      "points": [
+        "<b>PPR (Peste des Petits Ruminants):</b> Fever, nasal discharge, diarrhea. Vaccinate once a year.",
+        "<b>Enterotoxemia:</b> Sudden death, bloat. Vaccinate kids at 4 months, booster every 6 months.",
+        "<b>Foot Rot:</b> Trim hooves regularly, use zinc sulfate foot bath. Keep pens dry.",
+        "<b>Pneumonia:</b> Coughing, nasal discharge. Ensure proper ventilation. Antibiotics needed.",
+        "<b>Internal Parasites:</b> Deworm every 2-3 months. Use FAMACHA scoring for anemia checks."
+      ]
+    },
+    "sheep": {
+      "title": "Common Sheep Diseases & Treatment",
+      "points": [
+        "<b>Blue Tongue:</b> Swollen tongue, drooling, fever. Vaccinate before monsoon. No direct treatment.",
+        "<b>Sheep Pox:</b> Fever, skin nodules, scabs. Vaccinate annually. Isolate infected sheep.",
+        "<b>Liver Fluke:</b> Weight loss, bottle jaw. Deworm with Triclabendazole. Avoid wet grazing areas.",
+        "<b>Wool Slip / Fleece Rot:</b> Caused by moisture. Ensure proper shearing and dry housing.",
+        "<b>Foot Rot:</b> Regular hoof trimming. Use 10% zinc sulfate foot bath weekly."
+      ]
+    },
+    "poultry": {
+      "title": "Common Poultry Diseases & Treatment",
+      "points": [
+        "<b>Newcastle Disease (Ranikhet):</b> Respiratory distress, green droppings. Vaccinate at day 7, 21, and every 3 months.",
+        "<b>Fowl Pox:</b> Scabs on comb/wattle. Vaccinate at 6 weeks. No direct cure once infected.",
+        "<b>Coccidiosis:</b> Bloody droppings, weakness. Use anticoccidial drugs (Amprolium). Keep litter dry.",
+        "<b>Infectious Bursal Disease (IBD):</b> Feather ruffling, white diarrhea. Vaccinate at 14-18 days.",
+        "<b>Avian Influenza:</b> Sudden death, swollen head. Report immediately. Practice strict biosecurity."
+      ]
+    }
+  },
+  "feeding": {
+    "cow": {
+      "title": "Cow Feeding Guidelines",
+      "points": [
+        "<b>Daily Dry Matter:</b> Feed 2.5-3% of body weight. A 400kg cow needs 10-12 kg dry matter/day.",
+        "<b>Green Fodder:</b> 25-30 kg daily (Napier grass, Lucerne, Maize). Chop before feeding.",
+        "<b>Dry Fodder:</b> 5-6 kg daily (paddy straw, wheat straw). Treat with urea (4%) to improve digestibility.",
+        "<b>Concentrate Feed:</b> 1 kg per 2.5 litres of milk produced. Mix grain, oilcake, bran, minerals.",
+        "<b>Water:</b> Provide 40-60 litres of clean water daily. More during summers and lactation.",
+        "<b>Mineral Mix:</b> 50-60g daily. Essential for milk production and bone health."
+      ]
+    },
+    "buffalo": {
+      "title": "Buffalo Feeding Guidelines",
+      "points": [
+        "<b>Green Fodder:</b> 30-40 kg daily. Prefer Berseem, Lucerne, or Napier grass.",
+        "<b>Dry Fodder:</b> 5-8 kg daily. Paddy straw or wheat bhusa. Urea treatment improves quality.",
+        "<b>Concentrate:</b> 1 kg per 2 litres of milk. Higher protein needed (18-20% CP).",
+        "<b>During Pregnancy:</b> Extra 1.5 kg concentrate in last 2 months. Add bypass fat.",
+        "<b>Water:</b> 50-70 litres daily. Buffaloes need wallowing or sprinklers in summer.",
+        "<b>Tip:</b> Feed concentrates before milking for better letdown."
+      ]
+    },
+    "goat": {
+      "title": "Goat Feeding Guidelines",
+      "points": [
+        "<b>Grazing:</b> Allow 6-8 hours of browsing daily. Goats prefer shrubs and tree leaves.",
+        "<b>Dry Fodder:</b> 1-2 kg daily (hay, groundnut haulms). Provide in evenings.",
+        "<b>Concentrate:</b> 200-300g daily for milking does. Use goat-specific mineral mix.",
+        "<b>Kidding Period:</b> Increase feed by 50% in late pregnancy. Colostrum within 1 hour of birth.",
+        "<b>Water:</b> 4-5 litres daily. Always keep clean water accessible.",
+        "<b>Avoid:</b> Azalea, rhododendron, and oleander leaves — toxic to goats."
+      ]
+    },
+    "sheep": {
+      "title": "Sheep Feeding Guidelines",
+      "points": [
+        "<b>Grazing:</b> 8 hours daily on natural pastures. Rotational grazing recommended.",
+        "<b>Hay:</b> 1-2 kg per day when pasture is limited. Legume hay is ideal.",
+        "<b>Grain:</b> 200-400g daily for ewes. Increase during flushing (pre-breeding).",
+        "<b>Minerals:</b> Provide salt lick. Sheep need selenium and copper supplements.",
+        "<b>Lamb Feeding:</b> Creep feeding from 2 weeks old. Start with 50g, increase gradually.",
+        "<b>Water:</b> 4-8 litres per day. Lactating ewes need more."
+      ]
+    },
+    "poultry": {
+      "title": "Poultry Feeding Guidelines",
+      "points": [
+        "<b>Layer Feed:</b> 110-120g per bird/day. 16-18% protein with 3.5% calcium.",
+        "<b>Broiler Feed:</b> Starter (0-2 wk): 22% protein. Grower (2-4 wk): 20%. Finisher (4-6 wk): 18%.",
+        "<b>Water:</b> 250-300 ml per bird/day. Add electrolytes during summer.",
+        "<b>Grit:</b> Provide insoluble grit for digestion. Oyster shell for calcium.",
+        "<b>Feed Conversion:</b> Target FCR of 1.6-1.8 for broilers. Monitor weekly weight gain.",
+        "<b>Storage:</b> Keep feed dry and pest-free. Use within 2 weeks of manufacturing."
+      ]
+    }
+  },
+  "maintenance": {
+    "cow": {
+      "title": "Cow Maintenance & Care Guide",
+      "points": [
+        "<b>Housing:</b> 40 sq.ft per cow. Good ventilation, clean floor. Slope for drainage.",
+        "<b>Daily Routine:</b> Milking 2x/day at fixed times. Brush coat daily. Check hooves weekly.",
+        "<b>Vaccination Schedule:</b> FMD (every 6 mo), BQ (annually), Brucella (calf 4-8 mo), HS (pre-monsoon).",
+        "<b>Deworming:</b> Every 3 months with broad-spectrum anthelmintic. Rotate drug classes.",
+        "<b>Heat Detection:</b> Watch for mounting, mucus discharge, restlessness. AI within 12-18 hours.",
+        "<b>Record Keeping:</b> Maintain breeding, health, milk production records for each animal."
+      ]
+    },
+    "buffalo": {
+      "title": "Buffalo Maintenance & Care Guide",
+      "points": [
+        "<b>Housing:</b> 50 sq.ft per buffalo. Buffer need mud/water wallowing area in summer.",
+        "<b>Heat Management:</b> Sprinklers, fans, or wallowing pond essential in hot weather.",
+        "<b>Milking:</b> Twice daily. Complete milk letdown important for buffalo. Use oxytocin only under vet guidance.",
+        "<b>Hoof Care:</b> Trim every 3-4 months. Check for foot rot regularly.",
+        "<b>Breeding:</b> Buffaloes show silent heat. Use teaser bull or progesterone assay.",
+        "<b>Calf Rearing:</b> Allow suckling for 2-3 days. Wean gradually. Vaccinate as per schedule."
+      ]
+    },
+    "goat": {
+      "title": "Goat Maintenance & Care Guide",
+      "points": [
+        "<b>Housing:</b> Elevated slatted floor preferred. 10-15 sq.ft per goat. Good ventilation.",
+        "<b>Hygiene:</b> Clean pens daily. Disinfect monthly with lime water.",
+        "<b>Hoof Trimming:</b> Every 6-8 weeks. Prevents foot rot and lameness.",
+        "<b>Vaccination:</b> PPR (annually), Enterotoxemia (every 6 months), Goat Pox (annually).",
+        "<b>Breeding:</b> Buck:doe ratio 1:25-30. Breeding season: Aug-Dec in most regions.",
+        "<b>Kid Care:</b> Navel dipping with iodine at birth. Colostrum within first hour."
+      ]
+    },
+    "sheep": {
+      "title": "Sheep Maintenance & Care Guide",
+      "points": [
+        "<b>Shearing:</b> Twice a year (before summer and winter). Use clean, sharp shears.",
+        "<b>Housing:</b> 10-15 sq.ft per sheep. Protect from rain, predators, and extreme heat.",
+        "<b>Dipping:</b> Dip in acaricide solution every 3 months to control external parasites.",
+        "<b>Foot Care:</b> Regular trimming. Foot bath with zinc sulfate every 2 weeks.",
+        "<b>Breeding:</b> Flushing 2 weeks before mating. Ram:ewe ratio 1:30-40.",
+        "<b>Lambing:</b> Clean, dry pen. Assist only if needed. Navel care essential."
+      ]
+    },
+    "poultry": {
+      "title": "Poultry Maintenance & Care Guide",
+      "points": [
+        "<b>Housing:</b> 2 sq.ft per bird (deep litter). Good ventilation. Protect from predators.",
+        "<b>Litter:</b> 3-4 inch thick rice husk or wood shavings. Turn daily. Replace when wet.",
+        "<b>Lighting:</b> 16 hours light for layers. Use timer-controlled CFL/LED bulbs.",
+        "<b>Biosecurity:</b> Foot bath at entry. Limit visitors. All-in-all-out system preferred.",
+        "<b>Vaccination:</b> Newcastle (Day 7, 21), IBD (Day 14), Fowl Pox (Week 6), Deworming (monthly).",
+        "<b>Egg Collection:</b> Collect 3-4 times daily. Store at cool temperature. Grade before marketing."
+      ]
+    }
+  },
+  "breeding": {
+    "cow": {
+      "title": "Cow Breeding Tips",
+      "points": [
+        "<b>Age at First Breeding:</b> 15-18 months or when body weight reaches 250-275 kg.",
+        "<b>Heat Signs:</b> Mucus discharge, mounting behavior, reduced milk, swollen vulva.",
+        "<b>AI Timing:</b> Inseminate 12-18 hours after standing heat detected (AM-PM rule).",
+        "<b>Pregnancy Check:</b> Rectal palpation at 60 days. Or use pregnancy kits at 28 days.",
+        "<b>Dry Period:</b> Stop milking 60 days before expected calving. Increase concentrate.",
+        "<b>Post-Calving:</b> Watch for retained placenta. Resume breeding 60-90 days after calving."
+      ]
+    },
+    "buffalo": {
+      "title": "Buffalo Breeding Tips",
+      "points": [
+        "<b>Silent Heat:</b> Use teaser bull or tail paint method for detection.",
+        "<b>AI Timing:</b> Best results in evening/night insemination.",
+        "<b>Calving Interval:</b> Target 13-15 months. Supplementary feeding improves conception.",
+        "<b>Seasonal Breeding:</b> Buffaloes breed better in short day length (Sept-Feb).",
+        "<b>Pregnancy:</b> Gestation ~310 days. Provide extra care in last trimester."
+      ]
+    },
+    "goat": {
+      "title": "Goat Breeding Tips",
+      "points": [
+        "<b>Breeding Age:</b> Does at 10-12 months (25-30 kg). Bucks at 12 months.",
+        "<b>Flushing:</b> Increase feed 2-3 weeks before breeding to boost ovulation.",
+        "<b>Gestation:</b> ~150 days. Twins are common in well-managed herds.",
+        "<b>Buck Selection:</b> Choose for growth rate, disease resistance, and twinning trait.",
+        "<b>Post-Kidding:</b> Allow doe to lick kids. Ensure colostrum within 1 hour."
+      ]
+    },
+    "sheep": {
+      "title": "Sheep Breeding Tips",
+      "points": [
+        "<b>Breeding Season:</b> Aug-Dec typically. Use ram effect for synchronization.",
+        "<b>Ewes:</b> Breed at 12-14 months. Flush 2 weeks before mating.",
+        "<b>Ram Management:</b> Check fertility 6 weeks before season. Balanced nutrition essential.",
+        "<b>Gestation:</b> ~147 days. Scan at 60-90 days to identify multiples.",
+        "<b>Lambing:</b> Prepare clean pens. Assist only when necessary."
+      ]
+    },
+    "poultry": {
+      "title": "Poultry Breeding Tips",
+      "points": [
+        "<b>Cock:Hen Ratio:</b> 1:10 for heavy breeds, 1:12 for light breeds.",
+        "<b>Breeder Age:</b> Start at 24-26 weeks. Peak fertility at 30-40 weeks.",
+        "<b>Egg Selection:</b> Medium size, clean, no cracks. Store pointed end down.",
+        "<b>Incubation:</b> 21 days at 37.5°C, 60% humidity. Turn eggs 3-5 times daily.",
+        "<b>Hatching:</b> Increase humidity to 70% on day 19. Do not open incubator."
+      ]
+    }
+  },
+  "vaccination": {
+    "cow": {
+      "title": "Cow Vaccination Schedule",
+      "points": [
+        "<b>FMD:</b> First at 4 months, booster at 9 months, then every 6 months.",
+        "<b>Black Quarter:</b> First at 6 months, then annually before monsoon.",
+        "<b>HS:</b> Annually before monsoon season.",
+        "<b>Brucella:</b> Female calves at 4-8 months (one time only — S19 vaccine).",
+        "<b>Theileriosis:</b> Endemic areas — vaccinate at 3 months with live vaccine.",
+        "<b>Deworming:</b> Every 3 months. Alternate Albendazole and Fenbendazole."
+      ]
+    },
+    "buffalo": {
+      "title": "Buffalo Vaccination Schedule",
+      "points": [
+        "<b>HS:</b> Most critical — annually before monsoon.",
+        "<b>FMD:</b> Every 6 months starting at 4 months of age.",
+        "<b>BQ:</b> Annually before monsoon.",
+        "<b>Brucella:</b> Female calves at 4-8 months.",
+        "<b>Deworming:</b> Every 3-4 months. Include liver fluke treatment."
+      ]
+    },
+    "goat": {
+      "title": "Goat Vaccination Schedule",
+      "points": [
+        "<b>PPR:</b> Once at 3 months, provides lifelong immunity.",
+        "<b>Enterotoxemia:</b> First at 4 months, booster in 15 days, then every 6 months.",
+        "<b>Goat Pox:</b> At 3 months, then annually.",
+        "<b>FMD:</b> Every 6 months in endemic areas.",
+        "<b>Deworming:</b> Every 2-3 months. Use FAMACHA scoring."
+      ]
+    },
+    "sheep": {
+      "title": "Sheep Vaccination Schedule",
+      "points": [
+        "<b>Enterotoxemia:</b> At 4 months, booster in 15 days, then every 6 months.",
+        "<b>Sheep Pox:</b> At 3 months, then annually.",
+        "<b>PPR:</b> Once at 3 months — lifelong immunity.",
+        "<b>Blue Tongue:</b> Before monsoon in endemic areas.",
+        "<b>Deworming:</b> Monthly during monsoon, quarterly otherwise."
+      ]
+    },
+    "poultry": {
+      "title": "Poultry Vaccination Schedule",
+      "points": [
+        "<b>Day 1:</b> Marek's Disease (at hatchery).",
+        "<b>Day 7:</b> Newcastle Disease (Lasota — eye drop/drinking water).",
+        "<b>Day 14:</b> IBD (Gumboro) — drinking water.",
+        "<b>Day 21:</b> Newcastle booster.",
+        "<b>Week 6:</b> Fowl Pox — wing web method.",
+        "<b>Week 8:</b> Newcastle (R2B — injection)."
+      ]
+    }
+  },
+  "milk": {
+    "cow": {
+      "title": "Improving Cow Milk Production",
+      "points": [
+        "<b>Feeding:</b> 1 kg concentrate per 2.5 litres of milk. Include bypass fat (100-150g/day).",
+        "<b>Milking Technique:</b> Full-hand milking preferred. Complete milking within 7 minutes.",
+        "<b>Frequency:</b> 3x milking can increase yield by 10-15%. Maintain consistent timing.",
+        "<b>Udder Health:</b> Pre-milking teat dip, strip first 2-3 streams. Post-milking teat dip.",
+        "<b>Comfort:</b> Clean, ventilated housing. Reduce stress. Maintain calm environment.",
+        "<b>Genetics:</b> Use proven AI sires. Cross-breeding with HF/Jersey improves yield."
+      ]
+    },
+    "buffalo": {
+      "title": "Improving Buffalo Milk Production",
+      "points": [
+        "<b>Cooling:</b> Buffaloes produce more milk when cool. Provide sprinklers/wallowing.",
+        "<b>Feeding:</b> 1 kg concentrate per 2 litres milk. Add bypass protein.",
+        "<b>Oxytocin:</b> Avoid dependency. Train for calf-less letdown with proper conditioning.",
+        "<b>Fat Content:</b> Buffalo milk has 6-8% fat. Feed quality affects fat percentage.",
+        "<b>Selection:</b> Choose Murrah, Nili-Ravi, or Jaffarabadi for high yield."
+      ]
+    },
+    "goat": {
+      "title": "Goat Milk Production Tips",
+      "points": [
+        "<b>Breed Selection:</b> Saanen, Alpine, Jamunapari for milk. Choose proven milking does.",
+        "<b>Feeding:</b> Quality legume hay + 300-500g concentrate for milking does.",
+        "<b>Milking:</b> Twice daily. Machine milking possible for larger herds.",
+        "<b>Hygiene:</b> Clean udder before milking. Cool milk immediately.",
+        "<b>Market:</b> Goat milk demand growing for health-conscious consumers. Premium pricing."
+      ]
+    },
+    "sheep": {
+      "title": "Sheep Milk Info",
+      "points": [
+        "<b>Note:</b> Sheep milk is less common commercially but very rich.",
+        "<b>Fat Content:</b> 7-8% fat, higher than cow/goat milk.",
+        "<b>Uses:</b> Ideal for cheese (Roquefort, Feta, Pecorino).",
+        "<b>Breeds:</b> East Friesian, Lacaune are top dairy sheep breeds."
+      ]
+    },
+    "poultry": {
+      "title": "Egg Production Tips",
+      "points": [
+        "<b>Layer Breeds:</b> White Leghorn (300+ eggs/yr), BV-380, Hy-Line.",
+        "<b>Lighting:</b> 16 hours of light daily triggers egg production.",
+        "<b>Calcium:</b> 3.5-4% calcium in diet. Oyster shell grit as supplement.",
+        "<b>Nesting:</b> 1 nest box per 4-5 hens. Keep nests dark and clean.",
+        "<b>Stress:</b> Reduce noise, overcrowding, temperature extremes for consistent laying.",
+        "<b>Peak Production:</b> 26-34 weeks. Expect 85-95% production rate."
+      ]
+    }
+  }
+}
