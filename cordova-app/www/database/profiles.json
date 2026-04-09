@@ -16,5 +16,14 @@
   "testUser2": {
     "name": "SpeedTest",
     "location": "Madurai"
+  },
+  "monesh": {
+    "name": "monesh",
+    "phone": "",
+    "location": "",
+    "acres": "0",
+    "sales": "11",
+    "revenue": "₹16,500",
+    "profileImage": ""
   }
 }

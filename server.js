@@ -1,5 +1,3 @@
-require('dotenv').config({ override: true });
-
 const express = require('express');
 const cors = require('cors');
 const compression = require('compression');
@@ -302,6 +300,69 @@ app.post('/api/market-products', asyncHandler(async (req, res) => {
     res.status(201).json(newProduct);
 }));
 
+// ===== GEOSPATIAL HELPER =====
+function haversineKm(lat1, lng1, lat2, lng2) {
+    const R = 6371; // Earth radius in km
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLng = (lng2 - lng1) * Math.PI / 180;
+    const a =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+        Math.sin(dLng / 2) * Math.sin(dLng / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+}
+
+function estimateTransportRs(km) {
+    // ₹8/km base rate (Tamil Nadu mini-truck / tractor transport avg)
+    if (km <= 0) return 0;
+    if (km < 2) return Math.round(km * 15); // local / < 2km
+    return Math.round(km * 8);
+}
+
+// ===== NEARBY MARKET PRODUCTS API =====
+// GET /api/market-products/nearby?lat=...&lng=...&radiusKm=50&sortBy=nearest|price&maxResults=50
+app.get('/api/market-products/nearby', asyncHandler(async (req, res) => {
+    const lat = parseFloat(req.query.lat);
+    const lng = parseFloat(req.query.lng);
+    const radiusKm = parseFloat(req.query.radiusKm) || 50;
+    const sortBy = req.query.sortBy || 'nearest';
+    const maxResults = Math.min(parseInt(req.query.maxResults) || 50, 200);
+
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+        return res.status(400).json({ error: 'Valid lat and lng query parameters are required.' });
+    }
+
+    const products = await readDB('market_products.json') || [];
+
+    // Filter to products with valid coords and within radius
+    const nearby = [];
+    for (const p of products) {
+        const pLat = p.coords?.lat;
+        const pLng = p.coords?.lng;
+        if (!Number.isFinite(pLat) || !Number.isFinite(pLng)) continue;
+
+        const distanceKm = haversineKm(lat, lng, pLat, pLng);
+        if (distanceKm > radiusKm) continue;
+
+        const transportEstimateRs = estimateTransportRs(distanceKm);
+        nearby.push({ ...p, distanceKm: Math.round(distanceKm * 10) / 10, transportEstimateRs });
+    }
+
+    // Sort
+    if (sortBy === 'price') {
+        nearby.sort((a, b) => {
+            const priceA = Number(a.packPrice || a.pricePer100g || 0);
+            const priceB = Number(b.packPrice || b.pricePer100g || 0);
+            return priceB - priceA; // highest price first
+        });
+    } else {
+        nearby.sort((a, b) => a.distanceKm - b.distanceKm); // nearest first
+    }
+
+    res.json(nearby.slice(0, maxResults));
+}));
+
 app.put('/api/market-products/:id', asyncHandler(async (req, res) => {
     const products = await readDB('market_products.json') || [];
     const index = products.findIndex(p => p.id === req.params.id);
@@ -559,6 +620,110 @@ app.get('/api/live-crop-rates', asyncHandler(async (req, res) => {
     } catch (err) {
         return await buildLocalFallback(err.message);
     }
+}));
+
+// ===== ORDERS API =====
+// Database: database/orders.json
+
+app.get('/api/orders', asyncHandler(async (req, res) => {
+    let orders = await readDB('orders.json') || [];
+    const { sellerId } = req.query;
+    if (sellerId) {
+        orders = orders.filter(o => o.sellerUserId === sellerId);
+    }
+    res.json(orders);
+}));
+
+app.post('/api/orders', asyncHandler(async (req, res) => {
+    const orders = await readDB('orders.json') || [];
+    const newOrder = {
+        id: `ord${Date.now()}`,
+        ...req.body,
+        createdAt: new Date().toISOString()
+    };
+    orders.push(newOrder);
+    await writeDB('orders.json', orders);
+    res.status(201).json(newOrder);
+}));
+
+// ===== FARMER DASHBOARD AGGREGATION API =====
+
+app.get('/api/dashboard/:userId', asyncHandler(async (req, res) => {
+    const { userId } = req.params;
+
+    const [allOrders, allProducts] = await Promise.all([
+        readDB('orders.json') || [],
+        readDB('market_products.json') || []
+    ]);
+
+    const myOrders = (allOrders || []).filter(o => o.sellerUserId === userId);
+    const myProducts = (allProducts || []).filter(p =>
+        p.holderName && p.holderName.toLowerCase().includes(userId.toLowerCase())
+    );
+
+    // Total earnings (completed orders)
+    const completedOrders = myOrders.filter(o => o.status === 'completed');
+    const totalEarnings = completedOrders.reduce((sum, o) => sum + (Number(o.totalPrice) || 0), 0);
+
+    // Order status counts
+    const orderStatus = {
+        completed: myOrders.filter(o => o.status === 'completed').length,
+        pending: myOrders.filter(o => o.status === 'pending').length,
+        cancelled: myOrders.filter(o => o.status === 'cancelled').length
+    };
+
+    // Monthly revenue — last 6 months
+    const now = new Date();
+    const monthlyRevenue = [];
+    for (let i = 5; i >= 0; i--) {
+        const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        const year = d.getFullYear();
+        const month = d.getMonth();
+        const label = d.toLocaleString('default', { month: 'short', year: '2-digit' });
+        const revenue = completedOrders
+            .filter(o => {
+                const od = new Date(o.createdAt);
+                return od.getFullYear() === year && od.getMonth() === month;
+            })
+            .reduce((sum, o) => sum + (Number(o.totalPrice) || 0), 0);
+        monthlyRevenue.push({ label, revenue });
+    }
+
+    // Best sellers — top 3 products by buys across all market products
+    const bestSellers = [...(allProducts || [])]
+        .sort((a, b) => (Number(b.buys) || 0) - (Number(a.buys) || 0))
+        .slice(0, 3)
+        .map(p => ({
+            id: p.id,
+            name: p.name,
+            buys: Number(p.buys) || 0,
+            image: p.image || '',
+            pricePer100g: Number(p.pricePer100g) || 0
+        }));
+
+    // Crops added by this user
+    const cropsAdded = myProducts.length;
+
+    // Quick stats
+    const totalSales = myOrders.reduce((sum, o) => sum + (Number(o.qty) || 0), 0);
+    const ratings = completedOrders.filter(o => o.rating).map(o => Number(o.rating));
+    const avgRating = ratings.length
+        ? Math.round((ratings.reduce((a, b) => a + b, 0) / ratings.length) * 10) / 10
+        : 0;
+
+    res.json({
+        totalEarnings,
+        orderStatus,
+        monthlyRevenue,
+        bestSellers,
+        cropsAdded,
+        quickStats: {
+            totalSales,
+            avgRating,
+            totalOrders: myOrders.length,
+            completedOrders: completedOrders.length
+        }
+    });
 }));
 
 // ===== ERROR HANDLING MIDDLEWARE =====

@@ -1,48 +1,5 @@
 [
   {
-    "id": "p1773932786233",
-    "name": "Seeds",
-    "info": "Good for health",
-    "holderName": "Monesh",
-    "holderId": "monesh",
-    "holderPhone": "6379751658",
-    "location": "Chennai",
-    "image": "image/uploads/1773932769272-cdd680e6.jpg",
-    "pricePer100g": "20",
-    "views": 2,
-    "buys": 0,
-    "minQuantity": 50,
-    "unit": "g"
-  },
-  {
-    "id": "p1",
-    "name": "Organic Wheat",
-    "info": "Premium grade, stone-cleaned and naturally dried.",
-    "holderName": "F93798012 - Lenin S",
-    "holderPhone": "9876543210",
-    "location": "Coimbatore",
-    "image": "https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=400",
-    "pricePer100g": "200",
-    "views": 19,
-    "buys": 9,
-    "minQuantity": 100,
-    "unit": "g"
-  },
-  {
-    "id": "p2",
-    "name": "Farm Fresh Turmeric",
-    "info": "Sun-cured turmeric fingers with high curcumin content.",
-    "holderName": "F12004321 - Tamil L",
-    "holderPhone": "9840012345",
-    "location": "Chennai",
-    "image": "https://images.unsplash.com/photo-1615485500704-8e990f9900f7?w=400",
-    "pricePer100g": "400",
-    "views": 12,
-    "buys": 3,
-    "minQuantity": 100,
-    "unit": "g"
-  },
-  {
     "id": "p3",
     "name": "Red Rice (Hand-Pounded)",
     "info": "Traditional hand-pounded red rice, rich in fiber and iron. No polishing.",
@@ -54,7 +11,12 @@
     "views": 22,
     "buys": 8,
     "minQuantity": 500,
-    "unit": "g"
+    "unit": "g",
+    "stock": null,
+    "coords": {
+      "lat": 9.9252,
+      "lng": 78.1198
+    }
   },
   {
     "id": "p4",
@@ -65,10 +27,15 @@
     "location": "Salem",
     "image": "https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=400",
     "pricePer100g": "350",
-    "views": 41,
+    "views": 43,
     "buys": 19,
     "minQuantity": 500,
-    "unit": "g"
+    "unit": "g",
+    "stock": 0,
+    "coords": {
+      "lat": 11.6643,
+      "lng": 78.146
+    }
   },
   {
     "id": "p5",
@@ -82,7 +49,11 @@
     "views": 18,
     "buys": 7,
     "minQuantity": 250,
-    "unit": "g"
+    "unit": "g",
+    "coords": {
+      "lat": 11.341,
+      "lng": 77.7172
+    }
   },
   {
     "id": "p6",
@@ -93,10 +64,14 @@
     "location": "Coimbatore",
     "image": "https://images.unsplash.com/photo-1599909533601-ec5e9cd9ac57?w=400",
     "pricePer100g": "550",
-    "views": 28,
+    "views": 30,
     "buys": 12,
     "minQuantity": 100,
-    "unit": "g"
+    "unit": "g",
+    "coords": {
+      "lat": 11.0168,
+      "lng": 76.9558
+    }
   },
   {
     "id": "p7",
@@ -107,10 +82,15 @@
     "location": "Trichy",
     "image": "https://images.unsplash.com/photo-1587049352846-4a222e784d38?w=400",
     "pricePer100g": "250",
-    "views": 48,
-    "buys": 35,
+    "views": 49,
+    "buys": 36,
     "minQuantity": 250,
-    "unit": "g"
+    "unit": "g",
+    "stock": null,
+    "coords": {
+      "lat": 10.7905,
+      "lng": 78.7047
+    }
   },
   {
     "id": "p8",
@@ -124,7 +104,11 @@
     "views": 15,
     "buys": 6,
     "minQuantity": 100,
-    "unit": "g"
+    "unit": "g",
+    "coords": {
+      "lat": 13.0827,
+      "lng": 80.2707
+    }
   },
   {
     "id": "p9",
@@ -138,7 +122,11 @@
     "views": 35,
     "buys": 27,
     "minQuantity": 1,
-    "unit": "kg"
+    "unit": "kg",
+    "coords": {
+      "lat": 10.787,
+      "lng": 79.1378
+    }
   },
   {
     "id": "p10",
@@ -152,6 +140,10 @@
     "views": 26,
     "buys": 10,
     "minQuantity": 500,
-    "unit": "g"
+    "unit": "g",
+    "coords": {
+      "lat": 11.341,
+      "lng": 77.7172
+    }
   }
 ]

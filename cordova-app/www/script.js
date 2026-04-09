@@ -1,30 +1,75 @@
 /**
  * Switch between navigation tabs
  */
-function showTab(id, title, btn) {
-    // Hide all sections
-    const sections = document.querySelectorAll('.section');
-    sections.forEach(s => s.classList.remove('active'));
+async function showTab(id, title, btn) {
+    try {
+        console.log('Switching to tab:', id);
+        
+        // Hide all sections
+        const sections = document.querySelectorAll('.section');
+        sections.forEach(s => s.classList.remove('active'));
 
-    // Show selected section
-    const activeSection = document.getElementById(id);
-    if (activeSection) {
-        activeSection.classList.add('active');
+        // Show selected section
+        const activeSection = document.getElementById(id);
+        if (activeSection) {
+            activeSection.classList.add('active');
+            _currentActiveTab = id;  // Track current tab
+            console.log('Section made active:', id);
+        } else {
+            console.warn('Section not found:', id);
+            return;  // Exit if section doesn't exist
+        }
+
+        // Update Nav Buttons
+        const buttons = document.querySelectorAll('.nav-btn');
+        buttons.forEach(b => b.classList.remove('active'));
+        if (btn) {
+            btn.classList.add('active');
+        }
+
+        // Update Header
+        const headerTitle = document.getElementById('header-title');
+        if (headerTitle) {
+            headerTitle.innerText = title;
+        }
+        
+        // Scroll to top of viewport
+        const viewport = document.getElementById('viewport');
+        if (viewport) {
+            viewport.scrollTop = 0;
+        }
+
+        // Load dashboard data when navigating to dashboard tab
+        if (id === 'dashboard' && typeof loadFarmerDashboard === 'function') {
+            console.log('Loading dashboard...');
+            loadFarmerDashboard(currentUserId);
+        }
+
+        // Init profile page when navigating to profile tab
+        if (id === 'profile' && typeof initProfilePage === 'function') {
+            console.log('Initializing profile page...');
+            await initProfilePage();
+            // Reassert profile tab is still active (in case of async issues)
+            if (_currentActiveTab === 'profile') {
+                const profileSection = document.getElementById('profile');
+                if (profileSection && !profileSection.classList.contains('active')) {
+                    profileSection.classList.add('active');
+                    console.log('Reapplied active class to profile section');
+                }
+            }
+            console.log('Profile page initialization complete');
+        }
+    } catch (e) {
+        console.error('Error in showTab:', e);
+        // Ensure the section stays visible even if initialization fails
+        const activeSection = document.getElementById(id);
+        if (activeSection) {
+            activeSection.classList.add('active');
+            _currentActiveTab = id;
+        }
     }
-
-    // Update Nav Buttons
-    const buttons = document.querySelectorAll('.nav-btn');
-    buttons.forEach(b => b.classList.remove('active'));
-    if (btn) {
-        btn.classList.add('active');
-    }
-
-    // Update Header
-    document.getElementById('header-title').innerText = title;
-    
-    // Scroll to top of viewport
-    document.getElementById('viewport').scrollTop = 0;
 }
+
 
 /**
  * Search/Filter Fertilizer items
@@ -163,6 +208,7 @@ let _currentProfile = {};
 let _cropCatalog = [];
 const CART_STORAGE_KEY = 'farmersfront_cart';
 let _lastCartOpenAt = 0;
+let _currentActiveTab = 'home';  // Track the currently active tab to prevent unintended switches
 
 function persistCartState() {
     try {
@@ -325,12 +371,15 @@ function cancelPayment() {
     if (itemsSection) itemsSection.style.display = 'block';
 }
 
-function processPayment() {
+async function processPayment() {
     const method = document.querySelector('input[name="payMethod"]:checked');
     if (!method) { alert('Please select a payment method.'); return; }
 
     const total = getCartTotal();
     const methodLabel = method.parentElement.textContent.trim();
+    const transactionId = `TXN${Date.now()}`;
+    const orderNumber = `ORD${Math.floor(100000 + Math.random() * 900000)}`;
+    const orderItems = JSON.parse(JSON.stringify(_cart)); // Save cart items before clearing
 
     // Simulate payment
     const payBtn = document.getElementById('payNowBtn');
@@ -339,7 +388,47 @@ function processPayment() {
         payBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Processing...';
     }
 
-    setTimeout(() => {
+    setTimeout(async () => {
+        try {
+            // Update stock for each product in cart
+            const products = loadMarketProducts();
+            
+            for (const cartItem of orderItems) {
+                if (cartItem.source === 'market') {
+                    const product = products.find(p => p.id === cartItem.id);
+                    if (product) {
+                        // Calculate quantity in packs (cartItem.qty is in grams, we need to calculate packs)
+                        const baseQty = Number(product.minQuantity || 100);
+                        const packsSold = Math.ceil(cartItem.qty / baseQty);
+                        
+                        // Reduce stock
+                        const newStock = Math.max(0, product.stock - packsSold);
+                        
+                        // Update via API
+                        await API.updateMarketProduct(product.id, { stock: newStock });
+                    }
+                }
+            }
+            
+            // Reload products to reflect stock changes
+            await fetchMarketProducts();
+            
+        } catch (err) {
+            console.error('Error updating stock:', err);
+            // Continue with payment success even if stock update fails
+        }
+
+        // Build order summary using saved cart items
+        const orderSummaryHTML = orderItems.map(item => `
+            <div class="success-order-item">
+                <div class="success-item-details">
+                    <strong>${item.name}</strong>
+                    <span class="success-item-qty">${item.qtyLabel}</span>
+                </div>
+                <div class="success-item-price">₹${formatTo2f(item.totalPrice)}</div>
+            </div>
+        `).join('');
+
         // Show success
         const panel = document.getElementById('cartPaymentSection');
         if (panel) {
@@ -347,18 +436,47 @@ function processPayment() {
                 <div class="payment-success">
                     <i class="fa-solid fa-circle-check" style="font-size:60px; color:var(--btn-green);"></i>
                     <h2>Payment Successful!</h2>
-                    <p>₹${total} paid via ${methodLabel}</p>
-                    <p class="pay-txn">Transaction ID: TXN${Date.now()}</p>
-                    <p style="color:#666; font-size:13px;">Your order has been placed successfully.</p>
+                    
+                    <div class="success-transaction-info">
+                        <div class="success-info-row">
+                            <span class="success-label">Order Number:</span>
+                            <span class="success-value">${orderNumber}</span>
+                        </div>
+                        <div class="success-info-row">
+                            <span class="success-label">Transaction ID:</span>
+                            <span class="success-value success-txn-id">${transactionId}</span>
+                        </div>
+                        <div class="success-info-row">
+                            <span class="success-label">Payment Method:</span>
+                            <span class="success-value">${methodLabel}</span>
+                        </div>
+                        <div class="success-info-row">
+                            <span class="success-label">Date & Time:</span>
+                            <span class="success-value">${new Date().toLocaleString()}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="success-items-summary">
+                        <h4>Order Items</h4>
+                        ${orderSummaryHTML}
+                    </div>
+                    
+                    <div class="success-final-total">
+                        <strong>Total Amount:</strong>
+                        <strong class="success-total-amount">₹${formatTo2f(total)}</strong>
+                    </div>
+                    
+                    <p style="color:#666; font-size:13px; text-align:center; margin-top:12px;">
+                        <i class="fa-solid fa-check-circle" style="color:var(--btn-green);"></i>
+                        Your order has been placed successfully.
+                    </p>
+                    
                     <button class="verify-btn" style="background:var(--btn-green); margin-top:15px; width:100%;" onclick="closePaymentSuccess()">
                         <i class="fa-solid fa-check"></i> Done
                     </button>
                 </div>
             `;
         }
-        _cart = [];
-        persistCartState();
-        renderCartPanel();
     }, 1500);
 }
 
@@ -370,6 +488,12 @@ function closePaymentSuccess() {
         panel.innerHTML = '';
     }
     if (itemsSection) itemsSection.style.display = 'block';
+    
+    // Clear cart only when user explicitly closes the success page
+    _cart = [];
+    persistCartState();
+    renderCartPanel();
+    
     toggleCartPanel();
 }
 
@@ -379,6 +503,13 @@ const currentRole = auth?.role || '';
 const isAdmin = currentRole === 'admin';
 const isSeller = currentRole === 'seller';
 const isUser = currentRole === 'user';
+
+// Show Dashboard nav button for seller/admin role
+if (isSeller || isAdmin) {
+    const dashBtn = document.getElementById('dashboardNavBtn');
+    if (dashBtn) dashBtn.style.display = '';
+}
+
 const undoState = {
     product: null,
     timer: null
@@ -655,20 +786,27 @@ function renderMarketProducts() {
             : '';
         const safeImage = resolveProductImage(product.image);
         const stars = renderStars(Number(ratingData.average));
-        const unit = product.unit || 'g';
+        const unit = product.packUnit || product.unit || 'g';
         const qtyId = `mkQty_${product.id}`;
         const qtyLabelId = `mkQtyLabel_${product.id}`;
         const qtyWrapId = `mkImgQty_${product.id}`;
-        const addBtn = canBuyProducts()
+        const stock = product.stock !== undefined ? Number(product.stock) : null;
+        const isSoldOut = stock !== null && stock <= 0;
+        const priceLabel = product.packPrice
+            ? `₹${product.packPrice}<small>/${product.packWeight || product.minQuantity}${unit}</small>`
+            : `₹${product.pricePer100g}<small>/100g</small>`;
+        const addBtn = canBuyProducts() && !isSoldOut
             ? `<button class="market-card-cart-btn" onclick="quickAddToCart('${product.id}', event)"><i class="fa-solid fa-cart-plus"></i> Add</button>`
-            : '';
+            : isSoldOut ? `<button class="market-card-cart-btn sold-out-btn" disabled>Sold Out</button>` : '';
 
         card.innerHTML = `
             ${removeButton}
-            <div class="market-card-img-wrap" onclick="openProductDetails('${product.id}')">
+            <div class="market-card-img-wrap${isSoldOut ? ' sold-out-wrap' : ''}" onclick="openProductDetails('${product.id}')">
                 <img src="${safeImage}" alt="${product.name}" loading="lazy" onerror="this.src='image/seeds.jpg'">
-                <span class="market-card-badge">${product.minQuantity}${unit} min</span>
-                ${canBuyProducts() ? `
+                ${isSoldOut ? '<div class="sold-out-badge"><span>SOLD OUT</span></div>' : ''}
+                ${stock !== null && !isSoldOut ? `<span class="stock-badge">${stock} left</span>` : ''}
+                <span class="market-card-badge">${product.packWeight || product.minQuantity}${unit}/pack</span>
+                ${canBuyProducts() && !isSoldOut ? `
                 <div id="${qtyWrapId}" class="img-qty img-qty-collapsed market-img-qty">
                     <button class="img-qty-launch" onclick="toggleCardImageQty('mk', '${product.id}', event)">+</button>
                     <div class="img-qty-controls">
@@ -680,7 +818,7 @@ function renderMarketProducts() {
                 </div>` : ''}
             </div>
             <div class="market-card-body" onclick="openProductDetails('${product.id}')">
-                <h3 class="market-card-title">${product.name}</h3>
+                <h3 class="market-card-title">${product.name}${product.variety ? ` <small class="variety-tag">${product.variety}</small>` : ''}</h3>
                 ${aliasHint ? `<small class="market-card-aliases">${aliasHint}</small>` : ''}
                 <p class="market-card-info">${product.info || ''}</p>
                 <div class="market-card-meta">
@@ -691,7 +829,7 @@ function renderMarketProducts() {
                 ${product.location ? `<div class="market-card-seller" style="color:#1976d2;"><i class="fa-solid fa-location-dot"></i> ${product.location}</div>` : ''}
             </div>
             <div class="market-card-footer">
-                <span class="market-card-price">₹${product.pricePer100g}<small>/100g</small></span>
+                <span class="market-card-price">${priceLabel}</span>
                 ${addBtn}
             </div>
         `;
@@ -699,6 +837,7 @@ function renderMarketProducts() {
         list.appendChild(card);
     });
 }
+
 
 function renderStars(rating) {
     const full = Math.floor(rating);
@@ -719,10 +858,22 @@ function quickAddToCart(productId, event) {
     const product = products.find(p => p.id === productId);
     if (!product) return;
 
+    // Check stock availability
+    if (product.stock !== undefined && product.stock <= 0) {
+        alert('This product is out of stock.');
+        return;
+    }
+
     const qtyInput = document.getElementById(`mkQty_${productId}`);
     const selectedQty = Math.max(0, Number(qtyInput?.value || 0));
     if (selectedQty <= 0) {
         alert('Tap + on the product image to select quantity.');
+        return;
+    }
+
+    // Validate requested quantity against available stock
+    if (product.stock !== undefined && selectedQty > product.stock) {
+        alert(`Only ${product.stock} pack(s) available. Please reduce quantity.`);
         return;
     }
 
@@ -745,62 +896,349 @@ function quickAddToCart(productId, event) {
 }
 
 async function addMarketProduct() {
-    const name = document.getElementById('productName')?.value.trim();
-    const info = document.getElementById('productInfo')?.value.trim();
+    const name       = document.getElementById('productName')?.value.trim();
+    const info       = document.getElementById('productInfo')?.value.trim();
+    const variety    = document.getElementById('productVariety')?.value.trim() || '';
+    const packWeight = document.getElementById('packWeight')?.value.trim();
+    const packUnit   = document.getElementById('packUnit')?.value || 'g';
+    const packPrice  = document.getElementById('packPrice')?.value.trim();
+    const stockSize  = document.getElementById('stockSize')?.value.trim();
     const holderName = document.getElementById('holderName')?.value.trim();
-    const holderPhone = document.getElementById('holderPhone')?.value.trim();
+    const holderPhone= document.getElementById('holderPhone')?.value.trim();
     const imageInput = getImageValue('productImage');
-    const pricePer100g = document.getElementById('pricePer100g')?.value.trim();
-    const minQuantity = document.getElementById('minQuantity')?.value.trim();
-    const unit = document.getElementById('productUnit')?.value;
 
     if (!canAddProducts()) {
         alert('Only sellers or admins can add products.');
         return;
     }
 
-    if (!name || !info || !holderName || !holderPhone || !imageInput || !pricePer100g || !minQuantity || !unit) {
-        alert('Please fill all product fields.');
+    if (!name || !info || !holderName || !holderPhone || !imageInput || !packWeight || !packPrice || !stockSize) {
+        alert('Please fill all required fields (marked with *).');
         return;
     }
+
+    // Compute pricePer100g for display compatibility on product cards
+    let pricePer100g = Number(packPrice);
+    const weightNum = Number(packWeight);
+    if (packUnit === 'g' && weightNum > 0) {
+        pricePer100g = Math.round((Number(packPrice) / weightNum) * 100);
+    } else if (packUnit === 'kg' && weightNum > 0) {
+        pricePer100g = Math.round((Number(packPrice) / (weightNum * 1000)) * 100);
+    }
+
+    const gpsLat = parseFloat(document.getElementById('productLat')?.value);
+    const gpsLng = parseFloat(document.getElementById('productLng')?.value);
 
     const newProduct = {
         name,
         info,
+        variety,
+        packWeight: weightNum,
+        packUnit,
+        packPrice: Number(packPrice),
+        stock: Number(stockSize),
         holderName,
         holderId: currentUserId,
         holderPhone,
         location: document.getElementById('productLocation')?.value.trim() || '',
         image: resolveProductImage(imageInput),
         pricePer100g,
+        minQuantity: weightNum,
+        unit: packUnit,
         views: 0,
         buys: 0,
-        minQuantity: Number(minQuantity),
-        unit
+        coords: (Number.isFinite(gpsLat) && Number.isFinite(gpsLng))
+            ? { lat: gpsLat, lng: gpsLng }
+            : undefined
     };
 
     await API.addMarketProduct(newProduct);
     await fetchMarketProducts();
     renderMarketProducts();
 
-    document.getElementById('productName').value = '';
-    document.getElementById('productInfo').value = '';
-    document.getElementById('holderName').value = '';
-    document.getElementById('holderPhone').value = '';
+    // Reset form
+    ['productName','productInfo','productVariety','packWeight','packPrice',
+     'stockSize','holderName','holderPhone','productLocation'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = '';
+    });
+    document.getElementById('packUnit').value = 'g';
     clearImagePreview('productImage', 'productImagePreview');
     const urlWrap = document.getElementById('productImageUrlWrap');
     if (urlWrap) urlWrap.style.display = 'none';
-    document.getElementById('pricePer100g').value = '';
-    document.getElementById('minQuantity').value = '';
-    document.getElementById('productUnit').value = 'g';
 
     const form = document.getElementById('marketForm');
     if (form && !form.classList.contains('hidden-form')) {
         form.classList.add('hidden-form');
     }
 
-    alert('Product added successfully!');
+    alert('Product listed successfully!');
 }
+
+// ===== GEOLOCATION & NEARBY BUYER MATCHING =====
+
+let _nearbyMode = false;
+let _nearbyUserLat = null;
+let _nearbyUserLng = null;
+
+/**
+ * Haversine distance between two lat/lng points (in km)
+ */
+function haversineKm(lat1, lng1, lat2, lng2) {
+    const R = 6371;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLng = (lng2 - lng1) * Math.PI / 180;
+    const a =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+        Math.sin(dLng / 2) * Math.sin(dLng / 2);
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+/**
+ * Estimate transport cost (₹) based on distance
+ */
+function estimateTransport(km) {
+    if (km <= 0) return 0;
+    if (km < 2) return Math.round(km * 15);
+    return Math.round(km * 8);
+}
+
+/**
+ * Capture user GPS for adding a product listing
+ */
+function captureProductLocation() {
+    const btn = document.getElementById('captureGpsBtn');
+    const statusEl = document.getElementById('gpsCaptureStatus');
+    if (!navigator.geolocation) {
+        if (statusEl) statusEl.textContent = '❌ GPS not supported on this device.';
+        return;
+    }
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Detecting...';
+    }
+    if (statusEl) statusEl.textContent = '';
+
+    navigator.geolocation.getCurrentPosition(
+        (pos) => {
+            const lat = pos.coords.latitude;
+            const lng = pos.coords.longitude;
+            const latEl = document.getElementById('productLat');
+            const lngEl = document.getElementById('productLng');
+            if (latEl) latEl.value = lat;
+            if (lngEl) lngEl.value = lng;
+            if (statusEl) {
+                statusEl.innerHTML = `<i class="fa-solid fa-circle-check" style="color:var(--btn-green)"></i> GPS captured: ${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+            }
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-rotate"></i> Recapture GPS';
+            }
+        },
+        (err) => {
+            if (statusEl) statusEl.textContent = '❌ Could not get location: ' + err.message;
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-location-crosshairs"></i> Use My GPS Location';
+            }
+        },
+        { enableHighAccuracy: true, timeout: 10000 }
+    );
+}
+
+/**
+ * Enable nearby buyer matching mode
+ */
+function enableNearbyMode() {
+    const statusEl = document.getElementById('nearbyStatusText');
+    const enableBtn = document.getElementById('enableNearbyBtn');
+    const controls = document.getElementById('nearbyControls');
+
+    if (!navigator.geolocation) {
+        if (statusEl) statusEl.textContent = '❌ GPS not supported on this device.';
+        return;
+    }
+
+    if (enableBtn) {
+        enableBtn.classList.add('nearby-locating');
+        enableBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i><span>Detecting location...</span>';
+        enableBtn.disabled = true;
+    }
+    if (statusEl) statusEl.textContent = '';
+
+    navigator.geolocation.getCurrentPosition(
+        async (pos) => {
+            _nearbyUserLat = pos.coords.latitude;
+            _nearbyUserLng = pos.coords.longitude;
+            _nearbyMode = true;
+
+            if (enableBtn) {
+                enableBtn.classList.remove('nearby-locating');
+                enableBtn.classList.add('nearby-active-btn');
+                enableBtn.innerHTML = '<i class="fa-solid fa-circle-dot nearby-active-dot"></i><span>Nearby Mode ON</span>';
+                enableBtn.disabled = true;
+            }
+            if (controls) controls.style.display = 'flex';
+
+            await fetchNearbyProducts();
+        },
+        (err) => {
+            if (enableBtn) {
+                enableBtn.classList.remove('nearby-locating');
+                enableBtn.disabled = false;
+                enableBtn.innerHTML = '<i class="fa-solid fa-location-crosshairs nearby-pulse-icon"></i><span>Find Nearby Buyers</span>';
+            }
+            if (statusEl) statusEl.textContent = '❌ Location denied: ' + err.message;
+        },
+        { enableHighAccuracy: true, timeout: 12000 }
+    );
+}
+
+/**
+ * Clear nearby mode and revert to default listing
+ */
+async function clearNearbyMode() {
+    _nearbyMode = false;
+    _nearbyUserLat = null;
+    _nearbyUserLng = null;
+
+    const enableBtn = document.getElementById('enableNearbyBtn');
+    const controls = document.getElementById('nearbyControls');
+    const statusEl = document.getElementById('nearbyStatusText');
+
+    if (enableBtn) {
+        enableBtn.classList.remove('nearby-active-btn', 'nearby-locating');
+        enableBtn.disabled = false;
+        enableBtn.innerHTML = '<i class="fa-solid fa-location-crosshairs nearby-pulse-icon"></i><span>Find Nearby Buyers</span>';
+    }
+    if (controls) controls.style.display = 'none';
+    if (statusEl) statusEl.textContent = '';
+
+    await fetchMarketProducts();
+    renderMarketProducts();
+}
+
+/**
+ * Re-fetch nearby products when radius or sort changes
+ */
+async function refreshNearbyMode() {
+    if (!_nearbyMode || _nearbyUserLat === null) return;
+    await fetchNearbyProducts();
+}
+
+/**
+ * Fetch nearby products from API and render them
+ */
+async function fetchNearbyProducts() {
+    if (!_nearbyMode || _nearbyUserLat === null) return;
+
+    const radiusKm = parseInt(document.getElementById('nearbyRadiusSelect')?.value || '50');
+    const sortBy = document.getElementById('nearbySortSelect')?.value || 'nearest';
+    const statusEl = document.getElementById('nearbyStatusText');
+    const list = document.getElementById('marketProductList');
+
+    if (statusEl) statusEl.textContent = 'Loading...';
+    if (list) list.innerHTML = '<div class="nearby-loading"><i class="fa-solid fa-spinner fa-spin"></i> Finding nearby sellers...</div>';
+
+    try {
+        const products = await API.getNearbyProducts(_nearbyUserLat, _nearbyUserLng, radiusKm, sortBy);
+        if (statusEl) {
+            statusEl.textContent = products.length
+                ? `${products.length} seller${products.length !== 1 ? 's' : ''} within ${radiusKm} km`
+                : `No sellers found within ${radiusKm} km`;
+        }
+        renderNearbyMarketProducts(products);
+    } catch (err) {
+        if (statusEl) statusEl.textContent = '❌ ' + err.message;
+        if (list) list.innerHTML = '<p style="text-align:center;color:#888;">Could not load nearby products.</p>';
+    }
+}
+
+/**
+ * Render nearby product cards (with distance + transport badges, contact button)
+ */
+function renderNearbyMarketProducts(products) {
+    const list = document.getElementById('marketProductList');
+    if (!list) return;
+    list.innerHTML = '';
+
+    if (!products.length) {
+        list.innerHTML = `
+            <div class="nearby-empty">
+                <i class="fa-solid fa-location-dot" style="font-size:40px;color:#ccc;"></i>
+                <p>No sellers found nearby. Try increasing the radius.</p>
+            </div>`;
+        return;
+    }
+
+    products.forEach(product => {
+        const card = document.createElement('div');
+        card.className = 'market-card-new nearby-card';
+        card.dataset.search = buildProductSearchText(product, [product.holderName, product.holderPhone]);
+        const ratingData = getAverageRating(product);
+        const aliasHint = getProductAliasHint(product.name);
+        const removeButton = canRemoveProduct(product)
+            ? `<button class="market-remove-btn" onclick="removeMarketProduct('${product.id}', event)"><i class="fa-solid fa-trash"></i></button>`
+            : '';
+        const safeImage = resolveProductImage(product.image);
+        const stars = renderStars(Number(ratingData.average));
+        const unit = product.packUnit || product.unit || 'g';
+        const stock = product.stock !== undefined ? Number(product.stock) : null;
+        const isSoldOut = stock !== null && stock <= 0;
+        const distKm = product.distanceKm;
+        const transportRs = product.transportEstimateRs;
+        const priceLabel = product.packPrice
+            ? `₹${product.packPrice}<small>/${product.packWeight || product.minQuantity}${unit}</small>`
+            : `₹${product.pricePer100g}<small>/100g</small>`;
+        const addBtn = canBuyProducts() && !isSoldOut
+            ? `<button class="market-card-cart-btn" onclick="quickAddToCart('${product.id}', event)"><i class="fa-solid fa-cart-plus"></i> Add</button>`
+            : isSoldOut ? `<button class="market-card-cart-btn sold-out-btn" disabled>Sold Out</button>` : '';
+        const contactBtn = product.holderPhone
+            ? `<a href="tel:${product.holderPhone}" class="contact-buyer-btn"><i class="fa-solid fa-phone"></i> Contact Seller</a>`
+            : '';
+
+        card.innerHTML = `
+            ${removeButton}
+            <div class="market-card-img-wrap${isSoldOut ? ' sold-out-wrap' : ''}" onclick="openProductDetails('${product.id}')">
+                <img src="${safeImage}" alt="${product.name}" loading="lazy" onerror="this.src='image/seeds.jpg'">
+                ${isSoldOut ? '<div class="sold-out-badge"><span>SOLD OUT</span></div>' : ''}
+                ${stock !== null && !isSoldOut ? `<span class="stock-badge">${stock} left</span>` : ''}
+                <span class="market-card-badge">${product.packWeight || product.minQuantity}${unit}/pack</span>
+                ${distKm !== undefined ? `<span class="nearby-distance-badge"><i class="fa-solid fa-location-dot"></i> ${distKm} km</span>` : ''}
+                ${canBuyProducts() && !isSoldOut ? `
+                <div id="mkImgQty_${product.id}" class="img-qty img-qty-collapsed market-img-qty">
+                    <button class="img-qty-launch" onclick="toggleCardImageQty('mk', '${product.id}', event)">+</button>
+                    <div class="img-qty-controls">
+                        <button class="img-qty-btn" onclick="changeCardImageQty('mk', '${product.id}', -1, event)">-</button>
+                        <span id="mkQtyLabel_${product.id}" class="img-qty-count">0</span>
+                        <button class="img-qty-btn" onclick="changeCardImageQty('mk', '${product.id}', 1, event)">+</button>
+                    </div>
+                    <input id="mkQty_${product.id}" type="hidden" value="0">
+                </div>` : ''}
+            </div>
+            <div class="market-card-body" onclick="openProductDetails('${product.id}')">
+                <h3 class="market-card-title">${product.name}${product.variety ? ` <small class="variety-tag">${product.variety}</small>` : ''}</h3>
+                ${aliasHint ? `<small class="market-card-aliases">${aliasHint}</small>` : ''}
+                <p class="market-card-info">${product.info || ''}</p>
+                <div class="market-card-meta">
+                    <span class="market-card-rating">${stars} <small>(${ratingData.count})</small></span>
+                    <span class="market-card-views"><i class="fa-solid fa-eye"></i> ${product.views || 0}</span>
+                </div>
+                <div class="market-card-seller"><i class="fa-solid fa-user-tag"></i> ${product.holderName}</div>
+                ${product.location ? `<div class="market-card-seller" style="color:#1976d2;"><i class="fa-solid fa-location-dot"></i> ${product.location}</div>` : ''}
+                ${transportRs > 0 ? `<div class="nearby-transport-badge"><i class="fa-solid fa-truck"></i> Est. transport: ~₹${transportRs}</div>` : ''}
+            </div>
+            <div class="market-card-footer nearby-card-footer">
+                <span class="market-card-price">${priceLabel}</span>
+                ${addBtn}
+            </div>
+            ${contactBtn ? `<div class="contact-buyer-row">${contactBtn}</div>` : ''}
+        `;
+        list.appendChild(card);
+    });
+}
+
 
 function openProductDetails(productId) {
     window.location.href = `product-details.html?id=${encodeURIComponent(productId)}`;
@@ -902,8 +1340,25 @@ async function addToCartWithQuantity(productId) {
         return;
     }
 
+    // Check stock availability
+    if (product.stock !== undefined && product.stock <= 0) {
+        alert('This product is out of stock.');
+        return;
+    }
+
     const unit = product.unit || 'g';
     const requiredWeight = Number(weightInput.value || 100);
+    const minQuantity = Number(product.minQuantity || 100);
+    
+    // Calculate how many packs are needed
+    const packsNeeded = Math.ceil(requiredWeight / minQuantity);
+    
+    // Validate against available stock
+    if (product.stock !== undefined && packsNeeded > product.stock) {
+        alert(`Only ${product.stock} pack(s) available (${product.stock * minQuantity}${unit} max). Please reduce quantity.`);
+        return;
+    }
+
     const totalPrice = (convertToGrams(requiredWeight, unit) / 100) * Number(product.pricePer100g);
     
     product.buys = Number(product.buys || 0) + 1;
@@ -978,9 +1433,26 @@ function changeFertilizerQty(itemId, delta) {
 
 async function removeMarketProduct(productId, event) {
     if (event) event.stopPropagation();
-    const products = loadMarketProducts();
-    const product = products.find(item => item.id === productId);
-    if (!product) return;
+
+    // Search in main list first, then in currently displayed nearby cards
+    let product = loadMarketProducts().find(item => item.id === productId);
+    if (!product) {
+        // Nearby mode: product may only be in the rendered list, not _marketProducts
+        const cards = document.querySelectorAll('.market-card-new');
+        product = Array.from(cards)
+            .map(c => c.dataset)
+            .find(d => d && d.productId === productId);
+        // Fall back: try fetching all products to find it
+        if (!product) {
+            const all = await API.getMarketProducts();
+            product = all.find(p => p.id === productId);
+        }
+    }
+
+    if (!product) {
+        alert('Product not found.');
+        return;
+    }
 
     if (!canRemoveProduct(product)) {
         alert('You do not have permission to remove this listing.');
@@ -990,9 +1462,20 @@ async function removeMarketProduct(productId, event) {
     const confirmed = confirm('Remove this product from the market?');
     if (!confirmed) return;
 
-    await API.deleteMarketProduct(productId);
-    await fetchMarketProducts();
-    renderMarketProducts();
+    try {
+        await API.deleteMarketProduct(productId);
+    } catch (err) {
+        alert('Delete failed: ' + err.message);
+        return;
+    }
+
+    // Re-render appropriately based on current mode
+    if (_nearbyMode && _nearbyUserLat !== null) {
+        await fetchNearbyProducts();
+    } else {
+        await fetchMarketProducts();
+        renderMarketProducts();
+    }
 
     if (isAdmin) {
         queueUndoRemoval(product);
@@ -1086,41 +1569,45 @@ async function addFertilizer() {
         return;
     }
 
-    const name = document.getElementById('fertName')?.value.trim();
-    const type = document.getElementById('fertType')?.value.trim();
-    const brand = document.getElementById('fertBrand')?.value.trim();
+    const name       = document.getElementById('fertName')?.value.trim();
+    const type       = document.getElementById('fertType')?.value.trim();
+    const brand      = document.getElementById('fertBrand')?.value.trim();
+    const packWeight = document.getElementById('fertPackWeight')?.value.trim();
+    const packUnit   = document.getElementById('fertPackUnit')?.value || 'kg';
+    const price      = document.getElementById('fertPrice')?.value.trim();
+    const stock      = document.getElementById('fertStock')?.value.trim();
     const imageInput = getImageValue('fertImage');
-    const price = document.getElementById('fertPrice')?.value.trim();
 
-    if (!name || !type || !brand || !imageInput || !price) {
-        alert('Please fill all fertilizer fields.');
+    if (!name || !type || !brand || !packWeight || !price || !stock || !imageInput) {
+        alert('Please fill all required fields (marked with *).');
         return;
     }
 
     await API.addFertilizer({
-        name,
-        type,
-        brand,
+        name, type, brand,
+        packWeight: Number(packWeight),
+        packUnit,
+        price,
+        stock: Number(stock),
         image: resolveProductImage(imageInput),
-        location: document.getElementById('fertLocation')?.value.trim() || '',
-        price
+        location: document.getElementById('fertLocation')?.value.trim() || ''
     });
     await fetchFertilizers();
     renderFertilizers();
 
-    document.getElementById('fertName').value = '';
-    document.getElementById('fertType').value = '';
-    document.getElementById('fertBrand').value = '';
+    ['fertName','fertType','fertBrand','fertPackWeight','fertPrice','fertStock','fertLocation'].forEach(id => {
+        const el = document.getElementById(id); if (el) el.value = '';
+    });
+    document.getElementById('fertPackUnit').value = 'kg';
     clearImagePreview('fertImage', 'fertImagePreview');
     const fertUrlWrap = document.getElementById('fertImageUrlWrap');
     if (fertUrlWrap) fertUrlWrap.style.display = 'none';
-    document.getElementById('fertPrice').value = '';
 
     const form = document.getElementById('fertForm');
-    if (form && !form.classList.contains('hidden-form')) {
-        form.classList.add('hidden-form');
-    }
+    if (form && !form.classList.contains('hidden-form')) form.classList.add('hidden-form');
+    alert('Fertilizer listed successfully!');
 }
+
 
 function renderFertilizers() {
     const grid = document.getElementById('fertGrid');
@@ -1133,18 +1620,21 @@ function renderFertilizers() {
         const card = document.createElement('div');
         card.className = 'product-card fert-item';
         card.dataset.search = buildProductSearchText(item);
-        const buttonText = canBuyProducts() ? 'Add' : 'Users Only';
-        const buttonDisabled = canBuyProducts() ? '' : 'disabled';
         const aliasHint = getProductAliasHint(item.name);
         const qtyId = `fertQty_${item.id}`;
         const qtyLabelId = `fertQtyLabel_${item.id}`;
         const qtyWrapId = `fertImgQty_${item.id}`;
         const totalId = `fertTotal_${item.id}`;
+        const stock = item.stock !== undefined ? Number(item.stock) : null;
+        const isSoldOut = stock !== null && stock <= 0;
+        const packLabel = item.packWeight ? `${item.packWeight}${item.packUnit || 'kg'}/pack` : '';
 
         card.innerHTML = `
-            <div class="product-img-wrap">
+            <div class="product-img-wrap${isSoldOut ? ' sold-out-wrap' : ''}">
                 <img src="${resolveProductImage(item.image)}" class="product-img" alt="${item.name}" loading="lazy" onerror="this.src='image/seeds.jpg'">
-                ${canBuyProducts() ? `
+                ${isSoldOut ? '<div class="sold-out-badge"><span>SOLD OUT</span></div>' : ''}
+                ${stock !== null && !isSoldOut ? `<span class="stock-badge">${stock} left</span>` : ''}
+                ${canBuyProducts() && !isSoldOut ? `
                 <div id="${qtyWrapId}" class="img-qty img-qty-collapsed">
                     <button class="img-qty-launch" onclick="toggleCardImageQty('fert', '${item.id}', event)">+</button>
                     <div class="img-qty-controls">
@@ -1157,16 +1647,22 @@ function renderFertilizers() {
             </div>
             <span class="prod-name">${item.name}</span>
             ${aliasHint ? `<small class="product-aliases">${aliasHint}</small>` : ''}
-            <span class="prod-price">₹${item.price}</span>
+            <span class="prod-price">₹${item.price}${packLabel ? `<small> / ${packLabel}</small>` : ''}</span>
             <small>${item.type} | ${item.brand}</small>
             <p id="${totalId}" class="details-total-price card-inline-total"><strong>Total:</strong> ₹0.00</p>
             ${item.location ? `<small style="color:#1976d2;"><i class="fa-solid fa-location-dot"></i> ${item.location}</small>` : ''}
-            <button class="verify-btn card-action-btn card-action-btn-blue" ${buttonDisabled} onclick="addFertilizerToCart('${item.id}')">${buttonText}</button>
+            ${isSoldOut
+                ? `<button class="verify-btn card-action-btn sold-out-btn" disabled>Sold Out</button>`
+                : canBuyProducts()
+                    ? `<button class="verify-btn card-action-btn card-action-btn-blue" onclick="addFertilizerToCart('${item.id}')">Add</button>`
+                    : `<button class="verify-btn card-action-btn" disabled>Users Only</button>`
+            }
         `;
 
         grid.appendChild(card);
     });
 }
+
 
 function toggleCardImageQty(prefix, itemId, event) {
     if (event) event.stopPropagation();
@@ -1214,7 +1710,20 @@ function changeCardImageQty(prefix, itemId, delta, event) {
     if (!qtyInput || !qtyLabel) return;
 
     const currentQty = Number(qtyInput.value || 0);
-    const updatedQty = Math.max(0, currentQty + delta);
+    let updatedQty = Math.max(0, currentQty + delta);
+    
+    // Check stock limit for market products
+    if (prefix === 'mk') {
+        const products = loadMarketProducts();
+        const product = products.find(p => p.id === itemId);
+        if (product && product.stock !== undefined) {
+            updatedQty = Math.min(updatedQty, product.stock);
+            if (updatedQty > product.stock && delta > 0) {
+                // Silently cap at max stock, no alert needed on each click
+            }
+        }
+    }
+    
     qtyInput.value = String(updatedQty);
     qtyLabel.textContent = String(updatedQty);
 
@@ -1945,15 +2454,31 @@ async function loadProfile() {
     const userId = auth?.userId || 'guest';
     try {
         const profile = await API.getProfile(userId);
-        if (profile) return profile;
-    } catch (e) {}
+        // Make sure profile has all required fields
+        if (profile && typeof profile === 'object') {
+            return {
+                name: profile.name || auth?.name || auth?.userId || 'User',
+                phone: profile.phone || '',
+                location: profile.location || '',
+                acres: profile.acres || '0',
+                sales: profile.sales || '0',
+                revenue: profile.revenue || '₹0',
+                profileImage: profile.profileImage || '',
+                ...profile
+            };
+        }
+    } catch (e) {
+        console.error('Error loading profile:', e);
+    }
+    // Return default profile with user info
     return {
         name: auth?.name || auth?.userId || 'User',
         phone: '',
         location: '',
         acres: '0',
         sales: '0',
-        revenue: '₹0'
+        revenue: '₹0',
+        profileImage: ''
     };
 }
 
@@ -2021,8 +2546,8 @@ function applyProfileToUI(profile) {
     }
 
     if (roleEl) {
-        const roleLabel = currentRole === 'seller' ? 'Product Seller' : currentRole === 'admin' ? 'Admin' : 'User';
-        roleEl.textContent = `Role: ${roleLabel || '-'}`;
+        const roleLabel = currentRole === 'seller' ? '🌾 Product Seller' : currentRole === 'admin' ? '🛡 Admin' : '👤 Buyer';
+        roleEl.textContent = roleLabel;
     }
     if (acresEl) acresEl.textContent = profile.acres || '0';
     if (salesEl) salesEl.textContent = profile.sales || '0';
@@ -2080,27 +2605,58 @@ function applyProfileToUI(profile) {
 }
 
 async function initProfile() {
-    if (!document.getElementById('profileName')) return;
-    const profile = await loadProfile();
-    _currentProfile = profile || {};
-    applyProfileToUI(profile);
-    await loadHomeLiveCropRate();
+    try {
+        // Check if profileName element exists (we're on a page that has the profile)
+        const profileNameEl = document.getElementById('profileName');
+        if (!profileNameEl) {
+            console.log('Profile elements not found on this page, skipping initProfile');
+            return;
+        }
+        
+        console.log('Loading profile data...');
+        const profile = await loadProfile();
+        if (!profile) {
+            console.warn('No profile data returned from loadProfile()');
+            return;
+        }
+        
+        console.log('Profile data loaded:', profile);
+        _currentProfile = profile || {};
+        applyProfileToUI(profile);
+        console.log('Profile UI updated');
+        
+        // Load live crop rates if available
+        if (typeof loadHomeLiveCropRate === 'function') {
+            try {
+                await loadHomeLiveCropRate();
+            } catch (e) {
+                console.warn('Could not load crop rates:', e);
+            }
+        }
+    } catch (e) {
+        console.error('Error in initProfile:', e);
+        throw e; // Re-throw so caller can handle
+    }
 }
 
 async function saveProfileFromForm() {
-    const nameInput = document.getElementById('profileNameInput');
-    const phoneInput = document.getElementById('profilePhoneInput');
+    const nameInput     = document.getElementById('profileNameInput');
+    const phoneInput    = document.getElementById('profilePhoneInput');
     const locationInput = document.getElementById('profileLocationInput');
-    const acresInput = document.getElementById('profileAcresInput');
+    const acresInput    = document.getElementById('profileAcresInput');
 
     await saveProfile({
-        name: nameInput?.value.trim() || 'User',
-        phone: phoneInput?.value.trim() || '',
+        name:     nameInput?.value.trim()     || 'User',
+        phone:    phoneInput?.value.trim()    || '',
         location: locationInput?.value.trim() || '',
-        acres: acresInput?.value.trim() || '0'
+        acres:    acresInput?.value.trim()    || '0'
     });
     await loadHomeLiveCropRate();
-    alert('Profile updated!');
+    if (typeof showProfileToast === 'function') {
+        showProfileToast('Profile updated ✓', 'success');
+    } else {
+        alert('Profile updated!');
+    }
 }
 
 async function uploadProfileImage(fileInput) {
@@ -2127,6 +2683,22 @@ async function uploadProfileImage(fileInput) {
     fileInput.value = '';
 }
 
+// Debug helper function - call from console if profile isn't working
+window.debugProfile = function() {
+    const checks = {
+        currentActiveTab: _currentActiveTab,
+        profileSectionExists: !!document.getElementById('profile'),
+        profileSectionVisible: document.getElementById('profile')?.classList.contains('active'),
+        profileNameElement: !!document.getElementById('profileName'),
+        profilePhoneElement: !!document.getElementById('profilePhone'),
+        profileLocationElement: !!document.getElementById('profileLocation'),
+        currentProfile: _currentProfile,
+        authData: JSON.parse(localStorage.getItem('ffAuth') || '{}'),
+    };
+    console.table(checks);
+    return checks;
+};
+
 document.addEventListener('DOMContentLoaded', async () => {
     if (document.getElementById('loginForm')) {
         initLoginPage();
@@ -2136,24 +2708,21 @@ document.addEventListener('DOMContentLoaded', async () => {
     requireAuth();
     hydrateCartState();
 
-    // Fetch all data in parallel but do not block app startup on single-endpoint failures.
-    const bootTasks = [
-        { name: 'health', run: () => API.healthCheck() },
-        { name: 'crops', run: () => fetchCrops() },
-        { name: 'market-products', run: () => fetchMarketProducts() },
-        { name: 'fertilizers', run: () => fetchFertilizers() },
-        { name: 'cattle-feeds', run: () => fetchCattleFeeds() },
-        { name: 'cattle-products', run: () => fetchCattleProducts() },
-        { name: 'doctors', run: () => fetchDoctors() },
-        { name: 'cattle-diseases', run: () => fetchCattleDiseases() }
-    ];
-    const bootResults = await Promise.allSettled(bootTasks.map(task => task.run()));
-    const failed = bootResults
-        .map((result, index) => ({ result, name: bootTasks[index].name }))
-        .filter(item => item.result.status === 'rejected');
-
-    if (failed.length) {
-        console.warn('Some startup data failed to load:', failed.map(item => item.name));
+    // Fetch all data from server in parallel
+    try {
+        await API.healthCheck();
+        await Promise.all([
+            fetchCrops(),
+            fetchMarketProducts(),
+            fetchFertilizers(),
+            fetchCattleFeeds(),
+            fetchCattleProducts(),
+            fetchDoctors(),
+            fetchCattleDiseases()
+        ]);
+    } catch (err) {
+        console.error('Failed to load data:', err.message);
+        alert(`Database loading failed. ${err.message}`);
     }
 
     setOwnerControlsVisibility();
@@ -2439,16 +3008,18 @@ function renderCattleFeeds() {
         const qtyLabelId = `feedQtyLabel_${item.id}`;
         const qtyWrapId = `feedImgQty_${item.id}`;
         const totalId = `feedTotal_${item.id}`;
-        const buyBtn = canBuyProducts()
-            ? `<button class="verify-btn card-action-btn card-action-btn-green" onclick="buyCattleFeed('${item.id}')">Add</button>`
-            : `<button class="verify-btn card-action-btn" disabled>Users Only</button>`;
         const aliasHint = getProductAliasHint(item.name);
+        const stock = item.stock !== undefined ? Number(item.stock) : null;
+        const isSoldOut = stock !== null && stock <= 0;
+        const weightLabel = `${item.weight}${item.weightUnit || 'kg'}/pack`;
 
         card.innerHTML = `
             <span class="feed-type-badge">${item.type}</span>
-            <div class="product-img-wrap">
+            <div class="product-img-wrap${isSoldOut ? ' sold-out-wrap' : ''}">
                 <img src="${resolveProductImage(item.image)}" class="product-img" alt="${item.name}" loading="lazy" onerror="this.src='image/seeds.jpg'">
-                ${canBuyProducts() ? `
+                ${isSoldOut ? '<div class="sold-out-badge"><span>SOLD OUT</span></div>' : ''}
+                ${stock !== null && !isSoldOut ? `<span class="stock-badge">${stock} left</span>` : ''}
+                ${canBuyProducts() && !isSoldOut ? `
                 <div id="${qtyWrapId}" class="img-qty img-qty-collapsed">
                     <button class="img-qty-launch" onclick="toggleCardImageQty('feed', '${item.id}', event)">+</button>
                     <div class="img-qty-controls">
@@ -2461,15 +3032,21 @@ function renderCattleFeeds() {
             </div>
             <span class="prod-name">${item.name}</span>
             ${aliasHint ? `<small class="product-aliases">${aliasHint}</small>` : ''}
-            <span class="prod-price">₹${item.price}</span>
-            <small>${item.brand} | ${item.weight} kg</small>
+            <span class="prod-price">₹${item.price} <small>${weightLabel}</small></span>
+            <small>${item.brand}</small>
             <p id="${totalId}" class="details-total-price card-inline-total"><strong>Total:</strong> ₹0.00</p>
             ${item.location ? `<small style="color:#1976d2;"><i class="fa-solid fa-location-dot"></i> ${item.location}</small>` : ''}
-            ${buyBtn}
+            ${isSoldOut
+                ? `<button class="verify-btn card-action-btn sold-out-btn" disabled>Sold Out</button>`
+                : canBuyProducts()
+                    ? `<button class="verify-btn card-action-btn card-action-btn-green" onclick="buyCattleFeed('${item.id}')">Add</button>`
+                    : `<button class="verify-btn card-action-btn" disabled>Users Only</button>`
+            }
         `;
         grid.appendChild(card);
     });
 }
+
 
 function filterCattleFeeds() {
     const input = normalizeSearchText(document.getElementById('feedSearch').value);
@@ -2488,33 +3065,38 @@ function toggleFeedForm() {
 async function addCattleFeed() {
     if (!canAddProducts()) { alert('Only sellers or admins can add feeds.'); return; }
 
-    const name = document.getElementById('feedName')?.value.trim();
-    const type = document.getElementById('feedType')?.value;
-    const brand = document.getElementById('feedBrand')?.value.trim();
-    const weight = document.getElementById('feedWeight')?.value.trim();
-    const price = document.getElementById('feedPrice')?.value.trim();
-    const image = getImageValue('feedImage');
+    const name      = document.getElementById('feedName')?.value.trim();
+    const type      = document.getElementById('feedType')?.value;
+    const brand     = document.getElementById('feedBrand')?.value.trim();
+    const weight    = document.getElementById('feedWeight')?.value.trim();
+    const weightUnit= document.getElementById('feedWeightUnit')?.value || 'kg';
+    const price     = document.getElementById('feedPrice')?.value.trim();
+    const stock     = document.getElementById('feedStock')?.value.trim();
+    const image     = getImageValue('feedImage');
 
-    if (!name || !brand || !weight || !price) { alert('Please fill all required fields.'); return; }
+    if (!name || !brand || !weight || !price || !stock) { alert('Please fill all required fields.'); return; }
 
     await API.addCattleFeed({
-        name, type, brand, weight, price,
+        name, type, brand,
+        weight, weightUnit,
+        price, stock: Number(stock),
         location: document.getElementById('feedLocation')?.value.trim() || '',
         image: resolveProductImage(image)
     });
     await fetchCattleFeeds();
     renderCattleFeeds();
 
-    document.getElementById('feedName').value = '';
-    document.getElementById('feedBrand').value = '';
-    document.getElementById('feedWeight').value = '';
-    document.getElementById('feedPrice').value = '';
+    ['feedName','feedBrand','feedWeight','feedPrice','feedStock','feedLocation'].forEach(id => {
+        const el = document.getElementById(id); if (el) el.value = '';
+    });
+    document.getElementById('feedWeightUnit').value = 'kg';
     clearImagePreview('feedImage', 'feedImagePreview');
     const feedUrlWrap = document.getElementById('feedImageUrlWrap');
     if (feedUrlWrap) feedUrlWrap.style.display = 'none';
     toggleFeedForm();
-    alert('Feed added successfully!');
+    alert('Feed listed successfully!');
 }
+
 
 function buyCattleFeed(feedId) {
     if (!canBuyProducts()) { alert('Only users can buy.'); return; }
@@ -2578,16 +3160,18 @@ function renderCattleProducts() {
         const qtyId = `cpQty_${item.id}`;
         const qtyLabelId = `cpQtyLabel_${item.id}`;
         const qtyWrapId = `cpImgQty_${item.id}`;
-        const buyBtn = canBuyProducts()
-            ? `<button class="verify-btn card-action-btn card-action-btn-brown" onclick="buyCattleProduct('${item.id}')">Add</button>`
-            : `<button class="verify-btn card-action-btn" disabled>Users Only</button>`;
         const aliasHint = getProductAliasHint(item.name);
+        const stock = item.stock !== undefined ? Number(item.stock) : null;
+        const isSoldOut = stock !== null && stock <= 0;
+        const packLabel = item.packSize ? `${item.packSize}${item.packSizeUnit || ''}/pack` : '';
 
         card.innerHTML = `
             <span class="cp-badge">${item.category}</span>
-            <div class="product-img-wrap">
+            <div class="product-img-wrap${isSoldOut ? ' sold-out-wrap' : ''}">
                 <img src="${resolveProductImage(item.image)}" class="product-img" alt="${item.name}" loading="lazy" onerror="this.src='image/seeds.jpg'">
-                ${canBuyProducts() ? `
+                ${isSoldOut ? '<div class="sold-out-badge"><span>SOLD OUT</span></div>' : ''}
+                ${stock !== null && !isSoldOut ? `<span class="stock-badge">${stock} left</span>` : ''}
+                ${canBuyProducts() && !isSoldOut ? `
                 <div id="${qtyWrapId}" class="img-qty img-qty-collapsed">
                     <button class="img-qty-launch" onclick="toggleCardImageQty('cp', '${item.id}', event)">+</button>
                     <div class="img-qty-controls">
@@ -2600,15 +3184,21 @@ function renderCattleProducts() {
             </div>
             <span class="prod-name">${item.name}</span>
             ${aliasHint ? `<small class="product-aliases">${aliasHint}</small>` : ''}
-            <span class="prod-price">₹${item.price} <small style="font-size:11px;font-weight:normal;">${item.unit}</small></span>
+            <span class="prod-price">₹${item.price} <small>${packLabel || item.unit}</small></span>
             <small>${item.info}</small>
             <small style="color:#888;">Seller: ${item.seller}</small>
             ${item.location ? `<small style="color:#1976d2;"><i class="fa-solid fa-location-dot"></i> ${item.location}</small>` : ''}
-            ${buyBtn}
+            ${isSoldOut
+                ? `<button class="verify-btn card-action-btn sold-out-btn" disabled>Sold Out</button>`
+                : canBuyProducts()
+                    ? `<button class="verify-btn card-action-btn card-action-btn-brown" onclick="buyCattleProduct('${item.id}')">Add</button>`
+                    : `<button class="verify-btn card-action-btn" disabled>Users Only</button>`
+            }
         `;
         grid.appendChild(card);
     });
 }
+
 
 function changeCattleProductQty(productId, delta) {
     const qtyInput = document.getElementById(`cpQty_${productId}`);
@@ -2643,36 +3233,41 @@ function toggleCattleProductForm() {
 async function addCattleProduct() {
     if (!canAddProducts()) { alert('Only sellers or admins can list products.'); return; }
 
-    const name = document.getElementById('cpName')?.value.trim();
-    const category = document.getElementById('cpCategory')?.value;
-    const info = document.getElementById('cpInfo')?.value.trim();
-    const seller = document.getElementById('cpSeller')?.value.trim();
-    const phone = document.getElementById('cpPhone')?.value.trim();
-    const price = document.getElementById('cpPrice')?.value.trim();
-    const unit = document.getElementById('cpUnit')?.value;
-    const image = getImageValue('cpImage');
+    const name      = document.getElementById('cpName')?.value.trim();
+    const category  = document.getElementById('cpCategory')?.value;
+    const info      = document.getElementById('cpInfo')?.value.trim();
+    const seller    = document.getElementById('cpSeller')?.value.trim();
+    const phone     = document.getElementById('cpPhone')?.value.trim();
+    const packSize  = document.getElementById('cpPackSize')?.value.trim();
+    const packSzUnit= document.getElementById('cpPackSizeUnit')?.value || 'L';
+    const price     = document.getElementById('cpPrice')?.value.trim();
+    const stock     = document.getElementById('cpStock')?.value.trim();
+    const unit      = document.getElementById('cpUnit')?.value;
+    const image     = getImageValue('cpImage');
 
-    if (!name || !info || !seller || !phone || !price) { alert('Please fill all required fields.'); return; }
+    if (!name || !info || !seller || !phone || !price || !stock) { alert('Please fill all required fields.'); return; }
 
     await API.addCattleProduct({
-        name, category, info, seller, phone, price, unit,
+        name, category, info, seller, phone,
+        packSize: Number(packSize) || 1, packSizeUnit: packSzUnit,
+        price, unit,
+        stock: Number(stock),
         location: document.getElementById('cpLocation')?.value.trim() || '',
         image: resolveProductImage(image)
     });
     await fetchCattleProducts();
     renderCattleProducts();
 
-    document.getElementById('cpName').value = '';
-    document.getElementById('cpInfo').value = '';
-    document.getElementById('cpSeller').value = '';
-    document.getElementById('cpPhone').value = '';
-    document.getElementById('cpPrice').value = '';
+    ['cpName','cpInfo','cpSeller','cpPhone','cpPackSize','cpPrice','cpStock','cpLocation'].forEach(id => {
+        const el = document.getElementById(id); if (el) el.value = '';
+    });
     clearImagePreview('cpImage', 'cpImagePreview');
     const cpUrlWrap = document.getElementById('cpImageUrlWrap');
     if (cpUrlWrap) cpUrlWrap.style.display = 'none';
     toggleCattleProductForm();
     alert('Product listed successfully!');
 }
+
 
 function buyCattleProduct(productId) {
     if (!canBuyProducts()) { alert('Only users can buy.'); return; }

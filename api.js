@@ -165,7 +165,8 @@ async function ensureOfflineDb() {
             profiles: await readSeedJson('database/profiles.json', {}),
             doctors: await readSeedJson('database/doctors.json', []),
             cattleDiseases: await readSeedJson('database/cattle_diseases.json', {}),
-            aiKnowledge: await readSeedJson('database/ai_knowledge.json', {})
+            aiKnowledge: await readSeedJson('database/ai_knowledge.json', {}),
+            orders: await readSeedJson('database/orders.json', [])
         };
 
         offlineDbCache = seeded;
@@ -247,6 +248,19 @@ async function offlineRequest(url, options = {}) {
         db.users = users;
         persistOfflineDb();
         return { message: 'Registration successful.' };
+    }
+
+    if (pathname === '/api/auth/change-password' && method === 'POST') {
+        const userId      = String(body.userId      || '').trim();
+        const oldPassword = String(body.oldPassword || '');
+        const newPassword = String(body.newPassword || '').trim();
+        if (!userId || !oldPassword || !newPassword) throw new Error('All fields required.');
+        const userIdx = (db.users || []).findIndex(u => u.userId === userId);
+        if (userIdx === -1) throw new Error('User not found.');
+        if (db.users[userIdx].password !== oldPassword) throw new Error('Incorrect current password.');
+        db.users[userIdx].password = newPassword;
+        persistOfflineDb();
+        return { message: 'Password changed successfully.' };
     }
 
     if (pathname === '/api/users' && method === 'GET') {
@@ -374,6 +388,85 @@ async function offlineRequest(url, options = {}) {
         return { url: String(body.data || '') };
     }
 
+    // ===== ORDERS (offline — seeded from JSON) =====
+    if (pathname === '/api/orders' && method === 'GET') {
+        const sellerId = parsed.searchParams.get('sellerId') || '';
+        let orders = cloneData(db.orders || []);
+        if (sellerId) {
+            orders = orders.filter(o =>
+                String(o.sellerId || '').toLowerCase() === sellerId.toLowerCase() ||
+                String(o.sellerUserId || '').toLowerCase() === sellerId.toLowerCase()
+            );
+        }
+        return orders;
+    }
+    if (pathname === '/api/orders' && method === 'POST') {
+        const order = { ...body };
+        if (!order.id) order.id = nextId('ord');
+        if (!order.createdAt) order.createdAt = new Date().toISOString();
+        db.orders = db.orders || [];
+        db.orders.push(order);
+        persistOfflineDb();
+        return cloneData(order);
+    }
+
+    // ===== NEARBY MARKET PRODUCTS (offline Haversine) =====
+    if (pathname === '/api/market-products/nearby' && method === 'GET') {
+        const lat = parseFloat(parsed.searchParams.get('lat'));
+        const lng = parseFloat(parsed.searchParams.get('lng'));
+        const radiusKm = parseFloat(parsed.searchParams.get('radiusKm')) || 50;
+        const sortBy = parsed.searchParams.get('sortBy') || 'nearest';
+        const maxResults = Math.min(parseInt(parsed.searchParams.get('maxResults')) || 50, 200);
+
+        if (!Number.isFinite(lat) || !Number.isFinite(lng)) return [];
+
+        function haversineKmOffline(lat1, lng1, lat2, lng2) {
+            const R = 6371;
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLng = (lng2 - lng1) * Math.PI / 180;
+            const a =
+                Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                Math.sin(dLng / 2) * Math.sin(dLng / 2);
+            return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        }
+
+        function estimateTransportOffline(km) {
+            if (km <= 0) return 0;
+            if (km < 2) return Math.round(km * 15);
+            return Math.round(km * 8);
+        }
+
+        const products = db.marketProducts || [];
+        const nearby = [];
+        for (const p of products) {
+            const pLat = p.coords && p.coords.lat;
+            const pLng = p.coords && p.coords.lng;
+            if (!Number.isFinite(pLat) || !Number.isFinite(pLng)) continue;
+
+            const distanceKm = haversineKmOffline(lat, lng, pLat, pLng);
+            if (distanceKm > radiusKm) continue;
+
+            const transportEstimateRs = estimateTransportOffline(distanceKm);
+            nearby.push(Object.assign({}, p, {
+                distanceKm: Math.round(distanceKm * 10) / 10,
+                transportEstimateRs
+            }));
+        }
+
+        if (sortBy === 'price') {
+            nearby.sort((a, b) => {
+                const priceA = Number(a.packPrice || a.pricePer100g || 0);
+                const priceB = Number(b.packPrice || b.pricePer100g || 0);
+                return priceB - priceA;
+            });
+        } else {
+            nearby.sort((a, b) => a.distanceKm - b.distanceKm);
+        }
+
+        return cloneData(nearby.slice(0, maxResults));
+    }
+
     throw new Error(`Offline mode: endpoint not supported (${method} ${pathname}).`);
 }
 
@@ -495,6 +588,14 @@ const API = {
         return data;
     },
 
+    async changePassword(userId, oldPassword, newPassword) {
+        return await requestJson(`${API_BASE}/api/auth/change-password`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId, oldPassword, newPassword })
+        }, {}, 'Password change failed');
+    },
+
     // ===== CROPS DATABASE =====
     async getCrops() {
         return await requestJson(`${API_BASE}/api/crops`, {}, [], 'Failed to load crops database');
@@ -504,6 +605,21 @@ const API = {
     async getMarketProducts(location) {
         const params = location ? `?location=${encodeURIComponent(location)}` : '';
         return await requestJson(`${API_BASE}/api/market-products${params}`, {}, [], 'Failed to load market products');
+    },
+
+    async getNearbyProducts(lat, lng, radiusKm = 50, sortBy = 'nearest') {
+        const params = new URLSearchParams({
+            lat: lat.toString(),
+            lng: lng.toString(),
+            radiusKm: radiusKm.toString(),
+            sortBy
+        });
+        return await requestJson(
+            `${API_BASE}/api/market-products/nearby?${params.toString()}`,
+            {},
+            [],
+            'Failed to load nearby products'
+        );
     },
 
     async getLiveCropRates(location) {
@@ -631,5 +747,24 @@ const API = {
             body: JSON.stringify({ data: base64Data })
         }, {}, 'Upload failed');
         return result.url;
+    },
+
+    // ===== ORDERS =====
+    async getOrders(sellerId) {
+        const params = sellerId ? `?sellerId=${encodeURIComponent(sellerId)}` : '';
+        return await requestJson(`${API_BASE}/api/orders${params}`, {}, [], 'Failed to load orders');
+    },
+
+    async createOrder(orderData) {
+        return await requestJson(`${API_BASE}/api/orders`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(orderData)
+        }, {}, 'Failed to create order');
+    },
+
+    // ===== FARMER DASHBOARD =====
+    async getDashboard(userId) {
+        return await requestJson(`${API_BASE}/api/dashboard/${encodeURIComponent(userId)}`, {}, null, 'Failed to load dashboard');
     }
 };

@@ -6,9 +6,9 @@
     <title>Farmers Friend - Unified</title>
     <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
     <noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"></noscript>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style.css?v=4">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="mobile-config.js"></script>
-    <script src="seed-db.js"></script>
 </head>
 <body>
 
@@ -149,31 +149,69 @@
                 </button>
             </div>
 
-            <div id="fertForm" class="market-form hidden-form">
-                <h3><i class="fa-solid fa-flask" style="color:var(--lab-blue)"></i> Add Fertilizer</h3>
+            <div id="fertForm" class="market-form hidden-form" style="border-top-color:var(--lab-blue)">
+                <div class="mf-header" style="color:var(--lab-blue)">
+                    <i class="fa-solid fa-flask"></i>
+                    <div>
+                        <h3 style="margin:0;font-size:16px;">Add Fertilizer</h3>
+                        <p style="margin:0;font-size:11px;color:#888;">List your fertilizer for sale</p>
+                    </div>
+                </div>
+
+                <div class="mf-section-label">Product Details</div>
                 <div class="form-group">
-                    <label>FERTILIZER NAME</label>
+                    <label>FERTILIZER NAME <span class="mf-required">*</span></label>
                     <input type="text" id="fertName" class="market-input" placeholder="e.g. Urea 46%">
                 </div>
-                <div class="form-group">
-                    <label>TYPE / NPK</label>
-                    <input type="text" id="fertType" class="market-input" placeholder="e.g. 46-0-0">
+                <div class="mf-two-col">
+                    <div class="form-group">
+                        <label>TYPE / NPK <span class="mf-required">*</span></label>
+                        <input type="text" id="fertType" class="market-input" placeholder="e.g. 46-0-0">
+                    </div>
+                    <div class="form-group">
+                        <label>BRAND <span class="mf-required">*</span></label>
+                        <input type="text" id="fertBrand" class="market-input" placeholder="e.g. IFFCO">
+                    </div>
+                </div>
+
+                <div class="mf-section-label">Pack & Pricing</div>
+                <div class="mf-two-col">
+                    <div class="form-group">
+                        <label>PACK WEIGHT <span class="mf-required">*</span></label>
+                        <div class="mf-unit-row">
+                            <input type="number" id="fertPackWeight" class="market-input" min="1" placeholder="e.g. 50">
+                            <select id="fertPackUnit" class="market-input mf-unit-sel">
+                                <option value="kg">kg</option>
+                                <option value="g">g</option>
+                                <option value="L">L</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>PACK PRICE (₹) <span class="mf-required">*</span></label>
+                        <input type="number" id="fertPrice" class="market-input" min="1" placeholder="e.g. 450">
+                    </div>
                 </div>
                 <div class="form-group">
-                    <label>BRAND / COMPANY</label>
-                    <input type="text" id="fertBrand" class="market-input" placeholder="e.g. IFFCO">
+                    <label>STOCK SIZE <span class="mf-required">*</span> <span class="mf-hint">— number of packs available</span></label>
+                    <input type="number" id="fertStock" class="market-input" min="1" step="1" placeholder="e.g. 20">
                 </div>
+
+                <div class="mf-section-label">Seller Info</div>
                 <div class="form-group">
-                    <label>PRODUCT IMAGE</label>
+                    <label>LOCATION</label>
+                    <input type="text" id="fertLocation" class="market-input" placeholder="e.g. Chennai">
+                </div>
+
+                <div class="mf-section-label">Product Image <span class="mf-required">*</span></div>
+                <div class="form-group">
                     <div class="image-upload-box" id="fertImageUploadBox">
                         <div class="image-preview" id="fertImagePreview"></div>
                         <div class="image-upload-actions">
-                            <label class="upload-btn">
-                                <i class="fa-solid fa-camera"></i> Camera
+                            <label class="upload-btn"><i class="fa-solid fa-camera"></i> Camera
                                 <input type="file" accept="image/*" capture="environment" onchange="handleImageUpload(this, 'fertImage', 'fertImagePreview')" hidden>
                             </label>
-                            <label class="upload-btn">
-                                <i class="fa-solid fa-image"></i> Gallery
+                            <label class="upload-btn"><i class="fa-solid fa-image"></i> Gallery
                                 <input type="file" accept="image/*" onchange="handleImageUpload(this, 'fertImage', 'fertImagePreview')" hidden>
                             </label>
                             <button type="button" class="upload-btn url-toggle-btn" onclick="toggleUrlInput('fertImageUrlWrap')">
@@ -185,15 +223,10 @@
                         </div>
                     </div>
                 </div>
-                <div class="form-group">
-                    <label>PRICE</label>
-                    <input type="number" id="fertPrice" class="market-input" min="1" placeholder="e.g. 450">
+                <div class="mf-actions">
+                    <button class="verify-btn mf-cancel-btn" type="button" onclick="toggleFertilizerForm()"><i class="fa-solid fa-xmark"></i> Cancel</button>
+                    <button class="verify-btn mf-save-btn" type="button" style="background:var(--lab-blue)!important" onclick="addFertilizer()"><i class="fa-solid fa-check"></i> Save Fertilizer</button>
                 </div>
-                <div class="form-group">
-                    <label>LOCATION</label>
-                    <input type="text" id="fertLocation" class="market-input" placeholder="e.g. Chennai">
-                </div>
-                <button class="verify-btn" onclick="addFertilizer()" style="width: 100%; background: var(--lab-blue);">SAVE FERTILIZER</button>
             </div>
 
             <div class="product-grid" id="fertGrid"></div>
@@ -220,30 +253,121 @@
                 </button>
             </div>
 
+            <!-- ── NEARBY BUYER FILTER BAR ──────────────────── -->
+            <div id="nearbyFilterBar" class="nearby-filter-bar">
+                <button id="enableNearbyBtn" class="nearby-locate-btn" onclick="enableNearbyMode()">
+                    <i class="fa-solid fa-location-crosshairs nearby-pulse-icon"></i>
+                    <span>Find Nearby Buyers</span>
+                </button>
+                <div id="nearbyControls" class="nearby-controls" style="display:none;">
+                    <select id="nearbyRadiusSelect" class="nearby-select" onchange="refreshNearbyMode()">
+                        <option value="25">Within 25 km</option>
+                        <option value="50" selected>Within 50 km</option>
+                        <option value="100">Within 100 km</option>
+                        <option value="200">Within 200 km</option>
+                    </select>
+                    <select id="nearbySortSelect" class="nearby-select" onchange="refreshNearbyMode()">
+                        <option value="nearest">Nearest First</option>
+                        <option value="price">Price: Highest</option>
+                    </select>
+                    <button class="nearby-clear-btn" onclick="clearNearbyMode()">
+                        <i class="fa-solid fa-xmark"></i> Clear
+                    </button>
+                </div>
+                <span id="nearbyStatusText" class="nearby-status"></span>
+            </div>
+
             <div id="marketForm" class="market-form hidden-form">
-                <h3><i class="fa-solid fa-basket-shopping" style="color:var(--nature-brown)"></i> Add Product</h3>
+                <div class="mf-header">
+                    <i class="fa-solid fa-basket-shopping"></i>
+                    <div>
+                        <h3 style="margin:0;font-size:16px;">Add Product</h3>
+                        <p style="margin:0;font-size:11px;color:#888;">List your farm produce for sale</p>
+                    </div>
+                </div>
+
+                <!-- ── PRODUCT DETAILS ───────────────────── -->
+                <div class="mf-section-label">Product Details</div>
+
                 <div class="form-group">
-                    <label>PRODUCT NAME</label>
+                    <label>PRODUCT NAME <span class="mf-required">*</span></label>
                     <input type="text" id="productName" class="market-input" placeholder="e.g. Organic Groundnut">
                 </div>
+
                 <div class="form-group">
-                    <label>PRODUCT INFORMATION</label>
+                    <label>DESCRIPTION <span class="mf-required">*</span></label>
                     <input type="text" id="productInfo" class="market-input" placeholder="e.g. Chemical-free, freshly harvested">
                 </div>
+
                 <div class="form-group">
-                    <label>HOLDER NAME OR ID</label>
-                    <input type="text" id="holderName" class="market-input" placeholder="e.g. Lenin S / F93798012">
+                    <label>VARIETY <span class="mf-optional">(optional)</span></label>
+                    <input type="text" id="productVariety" class="market-input" placeholder="e.g. Grade A, Desi, Premium, IR64">
                 </div>
+
+                <!-- ── PACK & PRICE ──────────────────────── -->
+                <div class="mf-section-label">Pack & Pricing</div>
+
+                <div class="mf-two-col">
+                    <div class="form-group">
+                        <label>PACK WEIGHT <span class="mf-required">*</span></label>
+                        <div class="mf-unit-row">
+                            <input type="number" id="packWeight" class="market-input" min="1" placeholder="e.g. 500">
+                            <select id="packUnit" class="market-input mf-unit-sel">
+                                <option value="g">g</option>
+                                <option value="kg">kg</option>
+                                <option value="L">L</option>
+                                <option value="ml">ml</option>
+                                <option value="pcs">pcs</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>PACK PRICE (₹) <span class="mf-required">*</span></label>
+                        <input type="number" id="packPrice" class="market-input" min="1" placeholder="e.g. 120">
+                    </div>
+                </div>
+
                 <div class="form-group">
-                    <label>PHONE NUMBER</label>
-                    <input type="text" id="holderPhone" class="market-input" placeholder="e.g. 9876543210">
+                    <label>STOCK SIZE <span class="mf-required">*</span> <span class="mf-hint">— number of packs available</span></label>
+                    <input type="number" id="stockSize" class="market-input" min="1" step="1" placeholder="e.g. 50">
                 </div>
+
+                <!-- ── SELLER INFO ────────────────────────── -->
+                <div class="mf-section-label">Seller Info</div>
+
+                <div class="mf-two-col">
+                    <div class="form-group">
+                        <label>YOUR NAME <span class="mf-required">*</span></label>
+                        <input type="text" id="holderName" class="market-input" placeholder="e.g. Ravi Kumar">
+                    </div>
+                    <div class="form-group">
+                        <label>PHONE <span class="mf-required">*</span></label>
+                        <input type="text" id="holderPhone" class="market-input" placeholder="e.g. 9876543210">
+                    </div>
+                </div>
+
                 <div class="form-group">
                     <label>LOCATION</label>
                     <input type="text" id="productLocation" class="market-input" placeholder="e.g. Coimbatore">
                 </div>
+
+                <!-- ── GPS LOCATION CAPTURE ──────────────────── -->
+                <div class="mf-section-label">📍 GPS Location <span class="mf-hint">— helps buyers find you nearby</span></div>
                 <div class="form-group">
-                    <label>PRODUCT IMAGE</label>
+                    <div class="gps-capture-row">
+                        <button type="button" class="gps-capture-btn" id="captureGpsBtn" onclick="captureProductLocation()">
+                            <i class="fa-solid fa-location-crosshairs"></i> Use My GPS Location
+                        </button>
+                        <span id="gpsCaptureStatus" class="gps-capture-status"></span>
+                    </div>
+                    <input type="hidden" id="productLat">
+                    <input type="hidden" id="productLng">
+                </div>
+
+                <!-- ── PRODUCT IMAGE ──────────────────────── -->
+                <div class="mf-section-label">Product Image <span class="mf-required">*</span></div>
+
+                <div class="form-group">
                     <div class="image-upload-box" id="productImageUploadBox">
                         <div class="image-preview" id="productImagePreview"></div>
                         <div class="image-upload-actions">
@@ -264,23 +388,17 @@
                         </div>
                     </div>
                 </div>
-                <div class="form-group">
-                    <label>PRICE (MIN 100G)</label>
-                    <input type="number" id="pricePer100g" class="market-input" min="1" placeholder="e.g. 200">
+
+                <div class="mf-actions">
+                    <button class="verify-btn mf-cancel-btn" type="button" onclick="toggleProductForm()">
+                        <i class="fa-solid fa-xmark"></i> Cancel
+                    </button>
+                    <button class="verify-btn mf-save-btn" type="button" onclick="addMarketProduct()">
+                        <i class="fa-solid fa-check"></i> Save Product
+                    </button>
                 </div>
-                <div class="form-group">
-                    <label>MIN QUANTITY (G)</label>
-                    <input type="number" id="minQuantity" class="market-input" min="50" step="50" placeholder="e.g. 100">
-                </div>
-                <div class="form-group">
-                    <label>UNIT</label>
-                    <select id="productUnit" class="market-input">
-                        <option value="g">Gram (g)</option>
-                        <option value="kg">Kilogram (kg)</option>
-                    </select>
-                </div>
-                <button class="verify-btn" onclick="addMarketProduct()" style="width: 100%; background: var(--nature-brown);">SAVE PRODUCT</button>
             </div>
+
 
             <div class="section-title"><i class="fa-solid fa-store"></i> Active Market Listings</div>
             <div id="marketProductList" class="market-grid-new"></div>
@@ -452,46 +570,76 @@
                     </button>
                 </div>
 
-                <div id="feedForm" class="market-form hidden-form" style="border-top-color: var(--card-green);">
-                    <h3><i class="fa-solid fa-wheat-awn" style="color:var(--card-green)"></i> Add Cattle Feed</h3>
+                <div id="feedForm" class="market-form hidden-form" style="border-top-color:var(--card-green);">
+                    <div class="mf-header" style="color:var(--card-green)">
+                        <i class="fa-solid fa-wheat-awn"></i>
+                        <div>
+                            <h3 style="margin:0;font-size:16px;">Add Cattle Feed</h3>
+                            <p style="margin:0;font-size:11px;color:#888;">List your feed stock for sale</p>
+                        </div>
+                    </div>
+
+                    <div class="mf-section-label">Feed Details</div>
                     <div class="form-group">
-                        <label>FEED NAME</label>
+                        <label>FEED NAME <span class="mf-required">*</span></label>
                         <input type="text" id="feedName" class="market-input" placeholder="e.g. Premium Cattle Feed Pellets">
                     </div>
-                    <div class="form-group">
-                        <label>FEED TYPE</label>
-                        <select id="feedType" class="market-input">
-                            <option value="Dry Feed">Dry Feed</option>
-                            <option value="Green Feed">Green Feed</option>
-                            <option value="Concentrate">Concentrate</option>
-                            <option value="Mineral Mix">Mineral Mix</option>
-                            <option value="Silage">Silage</option>
-                            <option value="Supplement">Supplement</option>
-                        </select>
+                    <div class="mf-two-col">
+                        <div class="form-group">
+                            <label>FEED TYPE</label>
+                            <select id="feedType" class="market-input">
+                                <option value="Dry Feed">Dry Feed</option>
+                                <option value="Green Feed">Green Feed</option>
+                                <option value="Concentrate">Concentrate</option>
+                                <option value="Mineral Mix">Mineral Mix</option>
+                                <option value="Silage">Silage</option>
+                                <option value="Supplement">Supplement</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>BRAND <span class="mf-required">*</span></label>
+                            <input type="text" id="feedBrand" class="market-input" placeholder="e.g. Amul, Heritage">
+                        </div>
+                    </div>
+
+                    <div class="mf-section-label">Pack & Pricing</div>
+                    <div class="mf-two-col">
+                        <div class="form-group">
+                            <label>PACK WEIGHT <span class="mf-required">*</span></label>
+                            <div class="mf-unit-row">
+                                <input type="number" id="feedWeight" class="market-input" min="1" placeholder="e.g. 50">
+                                <select id="feedWeightUnit" class="market-input mf-unit-sel">
+                                    <option value="kg">kg</option>
+                                    <option value="g">g</option>
+                                    <option value="L">L</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>PACK PRICE (₹) <span class="mf-required">*</span></label>
+                            <input type="number" id="feedPrice" class="market-input" min="1" placeholder="e.g. 850">
+                        </div>
                     </div>
                     <div class="form-group">
-                        <label>BRAND</label>
-                        <input type="text" id="feedBrand" class="market-input" placeholder="e.g. Amul, Heritage">
+                        <label>STOCK SIZE <span class="mf-required">*</span> <span class="mf-hint">— number of packs</span></label>
+                        <input type="number" id="feedStock" class="market-input" min="1" step="1" placeholder="e.g. 30">
                     </div>
+
+                    <div class="mf-section-label">Seller Info</div>
                     <div class="form-group">
-                        <label>WEIGHT (KG)</label>
-                        <input type="number" id="feedWeight" class="market-input" min="1" placeholder="e.g. 50">
+                        <label>LOCATION</label>
+                        <input type="text" id="feedLocation" class="market-input" placeholder="e.g. Madurai">
                     </div>
+
+                    <div class="mf-section-label">Product Image <span class="mf-required">*</span></div>
                     <div class="form-group">
-                        <label>PRICE (₹)</label>
-                        <input type="number" id="feedPrice" class="market-input" min="1" placeholder="e.g. 850">
-                    </div>
-                    <div class="form-group">
-                        <label>PRODUCT IMAGE</label>
                         <div class="image-upload-box" id="feedImageUploadBox">
                             <div class="image-preview" id="feedImagePreview"></div>
                             <div class="image-upload-actions">
-                                <label class="upload-btn">
-                                    <i class="fa-solid fa-camera"></i> Camera
+                                <label class="upload-btn"><i class="fa-solid fa-camera"></i> Camera
                                     <input type="file" accept="image/*" capture="environment" onchange="handleImageUpload(this, 'feedImage', 'feedImagePreview')" hidden>
                                 </label>
-                                <label class="upload-btn">
-                                    <i class="fa-solid fa-image"></i> Gallery
+                                <label class="upload-btn"><i class="fa-solid fa-image"></i> Gallery
                                     <input type="file" accept="image/*" onchange="handleImageUpload(this, 'feedImage', 'feedImagePreview')" hidden>
                                 </label>
                                 <button type="button" class="upload-btn url-toggle-btn" onclick="toggleUrlInput('feedImageUrlWrap')">
@@ -503,11 +651,10 @@
                             </div>
                         </div>
                     </div>
-                    <div class="form-group">
-                        <label>LOCATION</label>
-                        <input type="text" id="feedLocation" class="market-input" placeholder="e.g. Madurai">
+                    <div class="mf-actions">
+                        <button class="verify-btn mf-cancel-btn" type="button" onclick="toggleFeedForm()"><i class="fa-solid fa-xmark"></i> Cancel</button>
+                        <button class="verify-btn mf-save-btn" type="button" style="background:var(--card-green)!important" onclick="addCattleFeed()"><i class="fa-solid fa-check"></i> Save Feed</button>
                     </div>
-                    <button class="verify-btn" onclick="addCattleFeed()" style="width:100%; background:var(--card-green);">SAVE FEED</button>
                 </div>
 
                 <div class="product-grid" id="feedGrid"></div>
@@ -531,59 +678,97 @@
                 </div>
 
                 <div id="cattleProductForm" class="market-form hidden-form">
-                    <h3><i class="fa-solid fa-bottle-droplet" style="color:var(--nature-brown)"></i> Sell Cattle Product</h3>
+                    <div class="mf-header">
+                        <i class="fa-solid fa-bottle-droplet"></i>
+                        <div>
+                            <h3 style="margin:0;font-size:16px;">Sell Cattle Product</h3>
+                            <p style="margin:0;font-size:11px;color:#888;">List your dairy or animal product</p>
+                        </div>
+                    </div>
+
+                    <div class="mf-section-label">Product Details</div>
                     <div class="form-group">
-                        <label>PRODUCT NAME</label>
+                        <label>PRODUCT NAME <span class="mf-required">*</span></label>
                         <input type="text" id="cpName" class="market-input" placeholder="e.g. Fresh Cow Milk">
                     </div>
-                    <div class="form-group">
-                        <label>CATEGORY</label>
-                        <select id="cpCategory" class="market-input">
-                            <option value="Milk">🥛 Milk</option>
-                            <option value="Meat">🥩 Meat</option>
-                            <option value="Eggs">🥚 Eggs</option>
-                            <option value="Ghee">🧈 Ghee</option>
-                            <option value="Curd">🍶 Curd / Yogurt</option>
-                            <option value="Paneer">🧀 Paneer / Cheese</option>
-                        </select>
+                    <div class="mf-two-col">
+                        <div class="form-group">
+                            <label>CATEGORY</label>
+                            <select id="cpCategory" class="market-input">
+                                <option value="Milk">🥛 Milk</option>
+                                <option value="Meat">🥩 Meat</option>
+                                <option value="Eggs">🥚 Eggs</option>
+                                <option value="Ghee">🧈 Ghee</option>
+                                <option value="Curd">🍶 Curd / Yogurt</option>
+                                <option value="Paneer">🧀 Paneer / Cheese</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>UNIT</label>
+                            <select id="cpUnit" class="market-input">
+                                <option value="per litre">Per Litre</option>
+                                <option value="per kg">Per Kg</option>
+                                <option value="per dozen">Per Dozen</option>
+                                <option value="per piece">Per Piece</option>
+                                <option value="per 500g">Per 500g</option>
+                            </select>
+                        </div>
                     </div>
                     <div class="form-group">
-                        <label>DESCRIPTION</label>
+                        <label>DESCRIPTION <span class="mf-required">*</span></label>
                         <input type="text" id="cpInfo" class="market-input" placeholder="e.g. Fresh, organic, no preservatives">
                     </div>
-                    <div class="form-group">
-                        <label>SELLER NAME</label>
-                        <input type="text" id="cpSeller" class="market-input" placeholder="e.g. Rajan Farm">
+
+                    <div class="mf-section-label">Pack & Pricing</div>
+                    <div class="mf-two-col">
+                        <div class="form-group">
+                            <label>PACK SIZE <span class="mf-required">*</span></label>
+                            <div class="mf-unit-row">
+                                <input type="number" id="cpPackSize" class="market-input" min="1" placeholder="e.g. 1">
+                                <select id="cpPackSizeUnit" class="market-input mf-unit-sel">
+                                    <option value="L">L</option>
+                                    <option value="kg">kg</option>
+                                    <option value="pcs">pcs</option>
+                                    <option value="doz">doz</option>
+                                    <option value="g">g</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>PACK PRICE (₹) <span class="mf-required">*</span></label>
+                            <input type="number" id="cpPrice" class="market-input" min="1" placeholder="e.g. 60">
+                        </div>
                     </div>
                     <div class="form-group">
-                        <label>PHONE</label>
-                        <input type="text" id="cpPhone" class="market-input" placeholder="e.g. 9876543210">
+                        <label>STOCK SIZE <span class="mf-required">*</span> <span class="mf-hint">— number of packs available</span></label>
+                        <input type="number" id="cpStock" class="market-input" min="1" step="1" placeholder="e.g. 10">
+                    </div>
+
+                    <div class="mf-section-label">Seller Info</div>
+                    <div class="mf-two-col">
+                        <div class="form-group">
+                            <label>YOUR NAME <span class="mf-required">*</span></label>
+                            <input type="text" id="cpSeller" class="market-input" placeholder="e.g. Rajan Farm">
+                        </div>
+                        <div class="form-group">
+                            <label>PHONE <span class="mf-required">*</span></label>
+                            <input type="text" id="cpPhone" class="market-input" placeholder="e.g. 9876543210">
+                        </div>
                     </div>
                     <div class="form-group">
-                        <label>PRICE</label>
-                        <input type="number" id="cpPrice" class="market-input" min="1" placeholder="e.g. 60">
+                        <label>LOCATION</label>
+                        <input type="text" id="cpLocation" class="market-input" placeholder="e.g. Salem">
                     </div>
+
+                    <div class="mf-section-label">Product Image <span class="mf-required">*</span></div>
                     <div class="form-group">
-                        <label>UNIT</label>
-                        <select id="cpUnit" class="market-input">
-                            <option value="per litre">Per Litre</option>
-                            <option value="per kg">Per Kg</option>
-                            <option value="per dozen">Per Dozen</option>
-                            <option value="per piece">Per Piece</option>
-                            <option value="per 500g">Per 500g</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label>PRODUCT IMAGE</label>
                         <div class="image-upload-box" id="cpImageUploadBox">
                             <div class="image-preview" id="cpImagePreview"></div>
                             <div class="image-upload-actions">
-                                <label class="upload-btn">
-                                    <i class="fa-solid fa-camera"></i> Camera
+                                <label class="upload-btn"><i class="fa-solid fa-camera"></i> Camera
                                     <input type="file" accept="image/*" capture="environment" onchange="handleImageUpload(this, 'cpImage', 'cpImagePreview')" hidden>
                                 </label>
-                                <label class="upload-btn">
-                                    <i class="fa-solid fa-image"></i> Gallery
+                                <label class="upload-btn"><i class="fa-solid fa-image"></i> Gallery
                                     <input type="file" accept="image/*" onchange="handleImageUpload(this, 'cpImage', 'cpImagePreview')" hidden>
                                 </label>
                                 <button type="button" class="upload-btn url-toggle-btn" onclick="toggleUrlInput('cpImageUrlWrap')">
@@ -595,11 +780,10 @@
                             </div>
                         </div>
                     </div>
-                    <div class="form-group">
-                        <label>LOCATION</label>
-                        <input type="text" id="cpLocation" class="market-input" placeholder="e.g. Salem">
+                    <div class="mf-actions">
+                        <button class="verify-btn mf-cancel-btn" type="button" onclick="toggleCattleProductForm()"><i class="fa-solid fa-xmark"></i> Cancel</button>
+                        <button class="verify-btn mf-save-btn" type="button" onclick="addCattleProduct()"><i class="fa-solid fa-check"></i> List Product</button>
                     </div>
-                    <button class="verify-btn" onclick="addCattleProduct()" style="width:100%; background:var(--nature-brown);">LIST PRODUCT</button>
                 </div>
 
                 <!-- Category filter buttons -->
@@ -617,25 +801,269 @@
             </div>
 
         </section>
-        <section id="profile" class="section">
-            <div class="profile-card">
-                <div class="profile-hero">
-                    <div class="profile-img-large" id="profileAvatar" onclick="document.getElementById('profileImageInput').click()">
-                        <i class="fa-solid fa-user" id="profileAvatarIcon"></i>
-                        <img id="profileAvatarImg" src="" alt="" style="display:none;">
-                        <div class="profile-img-overlay"><i class="fa-solid fa-camera"></i></div>
-                    </div>
-                    <input type="file" id="profileImageInput" accept="image/*" capture="environment" style="display:none;" onchange="uploadProfileImage(this)">
-                    <h2 id="profileName" style="margin:0">User</h2>
-                    <p id="profileId" style="opacity: 0.8; margin: 5px 0;">ID: -</p>
-                    <p id="profileRole" class="profile-role">Role: -</p>
+        <!-- ===== FARMER DASHBOARD SECTION ===== -->
+        <section id="dashboard" class="section">
+            <div class="db-hero">
+                <div class="db-hero-text">
+                    <div class="db-greeting" id="dbGreeting">Good morning, Farmer 🌾</div>
+                    <div class="db-subtitle">Here's your farm performance overview</div>
                 </div>
+                <div class="db-hero-date" id="dbDate"></div>
+            </div>
+
+            <!-- ===== SUMMARY STRIP (4 cards) ===== -->
+            <div class="db-summary-strip">
+                <div class="db-sum-card db-sum-green">
+                    <div class="db-sum-icon"><i class="fa-solid fa-wallet"></i></div>
+                    <div class="db-sum-body">
+                        <div class="db-sum-label">TOTAL EARNINGS</div>
+                        <div class="db-sum-val" id="dbSumEarnings">₹0</div>
+                        <div class="db-sum-sub">From completed orders</div>
+                    </div>
+                </div>
+                <div class="db-sum-card db-sum-blue">
+                    <div class="db-sum-icon"><i class="fa-solid fa-arrow-trend-up"></i></div>
+                    <div class="db-sum-body">
+                        <div class="db-sum-label">TOTAL SALES</div>
+                        <div class="db-sum-val" id="dbSumSales">0</div>
+                        <div class="db-sum-sub">Orders received</div>
+                    </div>
+                </div>
+                <div class="db-sum-card db-sum-orange">
+                    <div class="db-sum-icon"><i class="fa-solid fa-hourglass-half"></i></div>
+                    <div class="db-sum-body">
+                        <div class="db-sum-label">PENDING ORDERS</div>
+                        <div class="db-sum-val" id="dbSumPending">0</div>
+                        <div class="db-sum-sub">Awaiting action</div>
+                    </div>
+                </div>
+                <div class="db-sum-card db-sum-purple">
+                    <div class="db-sum-icon"><i class="fa-solid fa-box-open"></i></div>
+                    <div class="db-sum-body">
+                        <div class="db-sum-label">PRODUCTS LISTED</div>
+                        <div class="db-sum-val" id="dbSumProducts">0</div>
+                        <div class="db-sum-sub">Active listings</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Row 1: Earnings + Order Status -->
+
+            <div class="db-row">
+                <div class="db-card db-earnings-card">
+                    <div class="db-card-label"><i class="fa-solid fa-indian-rupee-sign"></i> TOTAL EARNINGS</div>
+                    <div class="db-earnings-value" id="dbTotalEarnings">₹0</div>
+                    <div class="db-earnings-sub" id="dbEarningsSub">from completed orders</div>
+                    <div class="db-earnings-glow"></div>
+                </div>
+                <div class="db-card db-status-card">
+                    <div class="db-card-label"><i class="fa-solid fa-chart-pie"></i> ORDER STATUS</div>
+                    <div class="db-status-grid">
+                        <div class="db-status-item db-status-completed">
+                            <span class="db-status-count" id="dbStatusCompleted">0</span>
+                            <span class="db-status-label">Completed</span>
+                        </div>
+                        <div class="db-status-item db-status-pending">
+                            <span class="db-status-count" id="dbStatusPending">0</span>
+                            <span class="db-status-label">Pending</span>
+                        </div>
+                        <div class="db-status-item db-status-cancelled">
+                            <span class="db-status-count" id="dbStatusCancelled">0</span>
+                            <span class="db-status-label">Cancelled</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Row 2: Revenue Chart -->
+            <div class="db-card db-chart-card">
+                <div class="db-card-label"><i class="fa-solid fa-chart-line"></i> MONTHLY REVENUE</div>
+                <div class="db-chart-wrap">
+                    <canvas id="dbRevenueChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Row 3: Best Sellers -->
+            <div class="db-card">
+                <div class="db-card-label"><i class="fa-solid fa-fire"></i> BEST SELLING PRODUCTS</div>
+                <div id="dbBestSellers" class="db-best-sellers"></div>
+            </div>
+
+            <!-- Row 4: Crops Added + Quick Stats -->
+            <div class="db-row">
+                <div class="db-card db-crops-card">
+                    <div class="db-card-label"><i class="fa-solid fa-seedling"></i> CROPS ADDED</div>
+                    <div class="db-crops-count" id="dbCropsCount">0</div>
+                    <div class="db-crops-label">active listings</div>
+                </div>
+                <div class="db-card db-quickstats-card">
+                    <div class="db-card-label"><i class="fa-solid fa-bolt"></i> QUICK STATS</div>
+                    <div class="db-quickstat-grid">
+                        <div class="db-qs-item">
+                            <i class="fa-solid fa-bag-shopping"></i>
+                            <span class="db-qs-val" id="dbTotalOrders">0</span>
+                            <span class="db-qs-lbl">Total Orders</span>
+                        </div>
+                        <div class="db-qs-item">
+                            <i class="fa-solid fa-check-circle"></i>
+                            <span class="db-qs-val" id="dbCompletedOrders">0</span>
+                            <span class="db-qs-lbl">Fulfilled</span>
+                        </div>
+                        <div class="db-qs-item">
+                            <i class="fa-solid fa-weight-hanging"></i>
+                            <span class="db-qs-val" id="dbTotalSales">0</span>
+                            <span class="db-qs-lbl">Units Sold</span>
+                        </div>
+                        <div class="db-qs-item">
+                            <i class="fa-solid fa-star"></i>
+                            <span class="db-qs-val" id="dbAvgRating">-</span>
+                            <span class="db-qs-lbl">Avg Rating</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Row 5: Nearby Market Activity -->
+            <div class="db-card db-nearby-card">
+                <div class="db-card-label"><i class="fa-solid fa-location-crosshairs"></i> NEARBY MARKET ACTIVITY</div>
+                <div class="db-nearby-header">
+                    <p class="db-nearby-hint">See what farmers are selling near your location.</p>
+                    <button id="dbNearbyDetectBtn" class="db-nearby-btn" onclick="loadDashboardNearby()">
+                        <i class="fa-solid fa-location-crosshairs"></i> Detect My Location
+                    </button>
+                </div>
+                <div id="dbNearbyStatus" class="db-nearby-status"></div>
+                <div id="dbNearbyList" class="db-nearby-list"></div>
+            </div>
+
+            <!-- Row 6: AI Price Prediction -->
+            <div class="db-card db-predict-card" id="dbPricePredict">
+                <div class="db-card-label">
+                    <i class="fa-solid fa-brain"></i> AI PRICE PREDICTION
+                    <span class="db-predict-badge">SMART</span>
+                </div>
+                <p class="db-predict-intro">
+                    Get data-driven pricing suggestions for your products based on your sales history and demand trends.
+                </p>
+
+                <!-- Product Selector -->
+                <div class="db-predict-selector">
+                    <label class="db-predict-sel-label">Select Product</label>
+                    <div class="db-predict-sel-wrap">
+                        <select id="dbPredictProductSel" class="db-predict-sel" onchange="onPredictProductChange()">
+                            <option value="">— loading products… —</option>
+                        </select>
+                        <button class="db-predict-run-btn" onclick="runPricePrediction()" id="dbPredictRunBtn">
+                            <i class="fa-solid fa-wand-magic-sparkles"></i> Predict
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Result Panel (hidden until prediction runs) -->
+                <div id="dbPredictResult" class="db-predict-result" style="display:none;">
+
+                    <!-- Current vs Suggested header -->
+                    <div class="db-predict-compare">
+                        <div class="db-predict-col db-predict-current">
+                            <div class="db-predict-col-label">Current Market</div>
+                            <div class="db-predict-col-val" id="ppCurrentPrice">—</div>
+                            <div class="db-predict-col-sub">₹ per 100g</div>
+                        </div>
+                        <div class="db-predict-arrow">
+                            <i class="fa-solid fa-arrow-right-long"></i>
+                        </div>
+                        <div class="db-predict-col db-predict-suggested">
+                            <div class="db-predict-col-label">Suggested Price</div>
+                            <div class="db-predict-col-val pp-suggested-val" id="ppSuggestedPrice">—</div>
+                            <div class="db-predict-col-sub">₹ per 100g</div>
+                        </div>
+                    </div>
+
+                    <!-- Pack price row (shown if product has pack info) -->
+                    <div id="ppPackRow" class="db-predict-pack-row" style="display:none;">
+                        <i class="fa-solid fa-box"></i>
+                        <span>Pack price suggestion: <strong id="ppCurrentPack">—</strong> → <strong id="ppSuggestedPack" class="pp-suggested-text">—</strong></span>
+                    </div>
+
+                    <!-- Stat pills -->
+                    <div class="db-predict-stats">
+                        <div class="db-predict-stat" id="ppStatAvg">
+                            <i class="fa-solid fa-calculator"></i>
+                            <span class="db-pstat-val" id="ppAvg30">—</span>
+                            <span class="db-pstat-lbl">30-day Avg</span>
+                        </div>
+                        <div class="db-predict-stat" id="ppStatTrend">
+                            <i class="fa-solid fa-arrow-trend-up" id="ppTrendIcon"></i>
+                            <span class="db-pstat-val" id="ppTrend">—</span>
+                            <span class="db-pstat-lbl">Trend</span>
+                        </div>
+                        <div class="db-predict-stat">
+                            <i class="fa-solid fa-bag-shopping"></i>
+                            <span class="db-pstat-val" id="ppOrders30">—</span>
+                            <span class="db-pstat-lbl">Orders (30d)</span>
+                        </div>
+                        <div class="db-predict-stat">
+                            <i class="fa-solid fa-percent"></i>
+                            <span class="db-pstat-val" id="ppBoost">—</span>
+                            <span class="db-pstat-lbl">Boost Applied</span>
+                        </div>
+                    </div>
+
+                    <!-- Suggestion text -->
+                    <div class="db-predict-tip" id="ppTip"></div>
+
+                    <!-- Sparkline mini-chart -->
+                    <div class="db-predict-spark-wrap">
+                        <div class="db-predict-spark-title">Price History (per 100g)</div>
+                        <div class="db-predict-spark-container">
+                            <canvas id="ppSparkCanvas"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- No data state -->
+                <div id="dbPredictNoData" class="db-predict-nodata" style="display:none;">
+                    <i class="fa-solid fa-circle-info"></i>
+                    <span id="dbPredictNoDataMsg">No completed orders found for this product yet.</span>
+                </div>
+
+                <!-- Loading -->
+                <div id="dbPredictLoading" class="db-predict-loading" style="display:none;">
+                    <i class="fa-solid fa-spinner fa-spin"></i> Analysing sales history…
+                </div>
+            </div>
+
+        </section>
+
+        <section id="profile" class="section">
+
+            <!-- ── Profile Card ─────────────────────────────────────── -->
+            <div class="profile-card">
+
+                <!-- Hero Banner -->
+                <div class="profile-hero">
+                    <div class="profile-hero-bg"></div>
+                    <div class="profile-avatar-wrap" onclick="document.getElementById('profileImageInput').click()">
+                        <div class="profile-img-large" id="profileAvatar">
+                            <i class="fa-solid fa-user" id="profileAvatarIcon"></i>
+                            <img id="profileAvatarImg" src="" alt="" style="display:none;">
+                        </div>
+                        <div class="profile-avatar-edit-badge"><i class="fa-solid fa-camera"></i></div>
+                    </div>
+                    <input type="file" id="profileImageInput" accept="image/*" capture="environment"
+                           style="display:none;" onchange="uploadProfileImage(this)">
+                    <h2 id="profileName" class="profile-hero-name">User</h2>
+                    <p id="profileId" class="profile-hero-id">ID: —</p>
+                    <span id="profileRole" class="profile-role-badge">User</span>
+                </div>
+
+                <!-- Stats Strip -->
                 <div class="profile-stats">
                     <div class="stat-box">
                         <span id="profileAcres">0</span>
                         <label id="profileAcresLabel">Acres</label>
                     </div>
-                    <div class="stat-box">
+                    <div class="stat-box stat-highlight">
                         <span id="profileSales">0</span>
                         <label id="profileSalesLabel">Sales</label>
                     </div>
@@ -644,59 +1072,179 @@
                         <label id="profileRevenueLabel">Revenue</label>
                     </div>
                 </div>
+
+                <!-- Quick Info Row -->
                 <div class="profile-info">
-                    <div class="info-row"><span>Phone</span><strong id="profilePhone">-</strong></div>
-                    <div class="info-row"><span>Location</span><strong id="profileLocation">-</strong></div>
+                    <div class="info-row">
+                        <span><i class="fa-solid fa-phone" style="color:var(--header-text);width:18px;"></i> Phone</span>
+                        <strong id="profilePhone">—</strong>
+                    </div>
+                    <div class="info-row">
+                        <span><i class="fa-solid fa-location-dot" style="color:var(--header-text);width:18px;"></i> Location</span>
+                        <strong id="profileLocation">—</strong>
+                    </div>
                 </div>
+
+                <!-- Role-specific Overview Blocks -->
                 <div class="profile-role-blocks">
-                    <div id="userProfileBlock" class="role-block">
-                        <h4>Buyer Overview</h4>
+                    <div id="userProfileBlock" class="role-block" style="display:none;">
+                        <div class="role-block-title"><i class="fa-solid fa-user"></i> Buyer Overview</div>
                         <div class="info-row"><span>Viewed Products</span><strong id="userViewedCount">0</strong></div>
                         <div class="info-row"><span>Purchases</span><strong id="userPurchaseCount">0</strong></div>
                     </div>
-                    <div id="sellerProfileBlock" class="role-block">
-                        <h4>Seller Overview</h4>
+                    <div id="sellerProfileBlock" class="role-block" style="display:none;">
+                        <div class="role-block-title"><i class="fa-solid fa-store"></i> Seller Overview</div>
                         <div class="info-row"><span>Listings</span><strong id="sellerListingCount">0</strong></div>
                         <div class="info-row"><span>Orders</span><strong id="sellerOrderCount">0</strong></div>
-                        <div class="info-row"><span>Avg Rating</span><strong id="sellerAvgRating">0</strong></div>
+                        <div class="info-row"><span>Avg Rating</span><strong id="sellerAvgRating">—</strong></div>
                     </div>
-                    <div id="adminProfileBlock" class="role-block">
-                        <h4>Admin Overview</h4>
+                    <div id="adminProfileBlock" class="role-block" style="display:none;">
+                        <div class="role-block-title"><i class="fa-solid fa-shield-halved"></i> Admin Overview</div>
                         <div class="info-row"><span>Total Listings</span><strong id="adminListingCount">0</strong></div>
                         <div class="info-row"><span>Total Fertilizers</span><strong id="adminFertCount">0</strong></div>
                         <div class="info-row"><span>Registered Users</span><strong id="adminUserCount">0</strong></div>
-                        <button class="verify-btn" style="margin-top:10px; background:var(--lab-blue); width:100%;" onclick="downloadUsersAsExcel()">
+                        <button class="verify-btn" style="margin-top:10px;background:var(--lab-blue);width:100%;" onclick="downloadUsersAsExcel()">
                             <i class="fa-solid fa-file-excel"></i> Download Users (Excel)
                         </button>
                     </div>
                 </div>
+
+                <!-- Edit Profile Form -->
                 <div class="profile-edit">
-                    <h3>Edit Profile</h3>
-                    <div class="form-group">
-                        <label>FULL NAME</label>
-                        <input type="text" id="profileNameInput" class="market-input" placeholder="Enter name">
+                    <div class="profile-edit-title"><i class="fa-solid fa-user-pen"></i> Edit Profile</div>
+                    <div class="mf-two-col">
+                        <div class="form-group">
+                            <label>FULL NAME</label>
+                            <input type="text" id="profileNameInput" class="market-input" placeholder="Enter name">
+                        </div>
+                        <div class="form-group">
+                            <label>PHONE</label>
+                            <input type="text" id="profilePhoneInput" class="market-input" placeholder="Enter phone">
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <label>PHONE</label>
-                        <input type="text" id="profilePhoneInput" class="market-input" placeholder="Enter phone">
+                    <div class="mf-two-col">
+                        <div class="form-group">
+                            <label>LOCATION</label>
+                            <input type="text" id="profileLocationInput" class="market-input" placeholder="Village / District">
+                        </div>
+                        <div class="form-group">
+                            <label>ACRES</label>
+                            <input type="number" id="profileAcresInput" class="market-input" min="0" step="0.5" placeholder="e.g. 4.5">
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <label>LOCATION</label>
-                        <input type="text" id="profileLocationInput" class="market-input" placeholder="Enter location">
-                    </div>
-                    <div class="form-group">
-                        <label>ACRES</label>
-                        <input type="number" id="profileAcresInput" class="market-input" min="0" step="0.5" placeholder="e.g. 4.5">
-                    </div>
-                    <button class="verify-btn" onclick="saveProfileFromForm()">SAVE PROFILE</button>
+                    <button class="verify-btn" onclick="saveProfileFromForm()" style="width:100%;">
+                        <i class="fa-solid fa-floppy-disk"></i> SAVE PROFILE
+                    </button>
                 </div>
+
+                <!-- Menu -->
                 <div class="profile-menu">
-                    <div class="menu-item"><i class="fa-solid fa-file-invoice-dollar"></i> My Transactions</div>
-                    <div class="menu-item"><i class="fa-solid fa-map-location-dot"></i> Land Records</div>
-                    <div class="menu-item"><i class="fa-solid fa-gear"></i> App Settings</div>
-                    <div class="menu-item" style="color:var(--medical-red)" onclick="logout()"><i class="fa-solid fa-right-from-bracket"></i> Logout</div>
+                    <div class="menu-item" onclick="openProfilePanel('panelTransactions')">
+                        <div class="menu-item-icon menu-icon-green"><i class="fa-solid fa-receipt"></i></div>
+                        <div class="menu-item-text">
+                            <strong>My Transactions</strong>
+                            <small>View orders, purchases & earnings</small>
+                        </div>
+                        <i class="fa-solid fa-chevron-right menu-item-arrow"></i>
+                    </div>
+                    <div class="menu-item" onclick="openProfilePanel('panelLandRecords')">
+                        <div class="menu-item-icon menu-icon-brown"><i class="fa-solid fa-map-location-dot"></i></div>
+                        <div class="menu-item-text">
+                            <strong>Land Records</strong>
+                            <small>Farmland area, soil & crop details</small>
+                        </div>
+                        <i class="fa-solid fa-chevron-right menu-item-arrow"></i>
+                    </div>
+                    <div class="menu-item" onclick="openProfilePanel('panelChangePass')">
+                        <div class="menu-item-icon menu-icon-blue"><i class="fa-solid fa-lock"></i></div>
+                        <div class="menu-item-text">
+                            <strong>Change Password</strong>
+                            <small>Update your account password</small>
+                        </div>
+                        <i class="fa-solid fa-chevron-right menu-item-arrow"></i>
+                    </div>
+                    <div class="menu-item" onclick="openProfilePanel('panelSettings')">
+                        <div class="menu-item-icon menu-icon-gray"><i class="fa-solid fa-gear"></i></div>
+                        <div class="menu-item-text">
+                            <strong>App Settings</strong>
+                            <small>Dark mode, notifications & backend</small>
+                        </div>
+                        <i class="fa-solid fa-chevron-right menu-item-arrow"></i>
+                    </div>
+                    <div class="menu-item menu-item-danger" onclick="logout()">
+                        <div class="menu-item-icon menu-icon-red"><i class="fa-solid fa-right-from-bracket"></i></div>
+                        <div class="menu-item-text">
+                            <strong>Logout</strong>
+                            <small>Sign out of your account</small>
+                        </div>
+                        <i class="fa-solid fa-chevron-right menu-item-arrow"></i>
+                    </div>
+                </div>
+
+            </div><!-- /profile-card -->
+
+            <!-- ══════════════════════════════════════════════════
+                 SLIDE-IN PANELS
+            ══════════════════════════════════════════════════ -->
+
+            <!-- My Transactions -->
+            <div id="panelTransactions" class="profile-panel">
+                <div class="pp-header">
+                    <button class="pp-back-btn" onclick="closeProfilePanel()">
+                        <i class="fa-solid fa-arrow-left"></i>
+                    </button>
+                    <span class="pp-title"><i class="fa-solid fa-receipt"></i> My Transactions</span>
+                </div>
+                <div class="pp-body">
+                    <div id="txSummary" class="tx-summary"></div>
+                    <div id="transactionBody" class="tx-list">
+                        <div class="pp-loading"><i class="fa-solid fa-spinner fa-spin"></i> Loading…</div>
+                    </div>
                 </div>
             </div>
+
+            <!-- Land Records -->
+            <div id="panelLandRecords" class="profile-panel">
+                <div class="pp-header">
+                    <button class="pp-back-btn" onclick="closeProfilePanel()">
+                        <i class="fa-solid fa-arrow-left"></i>
+                    </button>
+                    <span class="pp-title"><i class="fa-solid fa-map-location-dot"></i> Land Records</span>
+                </div>
+                <div class="pp-body" id="landRecordsBody">
+                    <div class="pp-loading"><i class="fa-solid fa-spinner fa-spin"></i> Loading…</div>
+                </div>
+            </div>
+
+            <!-- Change Password -->
+            <div id="panelChangePass" class="profile-panel">
+                <div class="pp-header">
+                    <button class="pp-back-btn" onclick="closeProfilePanel()">
+                        <i class="fa-solid fa-arrow-left"></i>
+                    </button>
+                    <span class="pp-title"><i class="fa-solid fa-lock"></i> Change Password</span>
+                </div>
+                <div class="pp-body" id="changePassBody">
+                    <div class="pp-loading"><i class="fa-solid fa-spinner fa-spin"></i> Loading…</div>
+                </div>
+            </div>
+
+            <!-- App Settings -->
+            <div id="panelSettings" class="profile-panel">
+                <div class="pp-header">
+                    <button class="pp-back-btn" onclick="closeProfilePanel()">
+                        <i class="fa-solid fa-arrow-left"></i>
+                    </button>
+                    <span class="pp-title"><i class="fa-solid fa-gear"></i> App Settings</span>
+                </div>
+                <div class="pp-body" id="settingsBody">
+                    <div class="pp-loading"><i class="fa-solid fa-spinner fa-spin"></i> Loading…</div>
+                </div>
+            </div>
+
+            <!-- Panel Backdrop -->
+            <div id="profilePanelBackdrop" class="profile-panel-backdrop" onclick="closeProfilePanel()"></div>
+
         </section>
 
     </main>
@@ -722,6 +1270,9 @@
             <button class="nav-btn" onclick="showTab('cattle', 'VET CARE', this)">
                 <i class="fa-solid fa-stethoscope"></i><span>CATTLE</span>
             </button>
+            <button class="nav-btn nav-btn-dashboard" id="dashboardNavBtn" style="display:none;" onclick="showTab('dashboard', 'MY DASHBOARD', this)">
+                <i class="fa-solid fa-gauge-high"></i><span>DASHBOARD</span>
+            </button>
         </div>
 
         <div class="broker-box">
@@ -734,8 +1285,11 @@
     </div>
 
 
-    <script src="api.js" defer></script>
-    <script src="script.js" defer></script>
+    <script src="api.js?v=3" defer></script>
+    <script src="script.js?v=3" defer></script>
+    <script src="price-prediction.js?v=2" defer></script>
+    <script src="profile.js?v=3" defer></script>
+    <script src="dashboard.js?v=2" defer></script>
 </body>
 
 </html>
