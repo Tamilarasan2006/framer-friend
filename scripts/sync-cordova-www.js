@@ -10,9 +10,6 @@ const filesToCopy = [
     'login.html',
     'product-details.html',
     'script.js',
-    'profile.js',
-    'dashboard.js',
-    'price-prediction.js',
     'style.css',
     'api.js'
 ];
