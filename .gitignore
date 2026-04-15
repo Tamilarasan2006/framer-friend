@@ -3,3 +3,24 @@ node_modules
 
 gradle-8.5-bin.zip
 
+# APK files - host on GitHub Releases instead
+*.apk
+apk/
+
+# Backup/temporary files
+*.backup
+*.tmp
+*.fixed
+
+# IDE
+.idea/
+.vscode/
+
+# Build artifacts
+build/
+dist/
+
+# OS
+.DS_Store
+Thumbs.db
+
