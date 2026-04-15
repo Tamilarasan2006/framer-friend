@@ -364,10 +364,15 @@ header .tractor-icon {
     width: 30px;
     height: 30px;
     font-weight: 700;
-    font-size: 17px;
+    font-size: 20px;
     cursor: pointer;
     color: #2d4d2d;
     transition: background 0.18s ease, color 0.18s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    line-height: 1;
 }
 
 .img-qty-launch:hover,
