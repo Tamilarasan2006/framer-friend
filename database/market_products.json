@@ -8,7 +8,7 @@
     "location": "Madurai",
     "image": "https://images.unsplash.com/photo-1586201375761-83865001e31c?w=400",
     "pricePer100g": "180",
-    "views": 22,
+    "views": 23,
     "buys": 8,
     "minQuantity": 500,
     "unit": "g",
@@ -108,7 +108,8 @@
     "coords": {
       "lat": 13.0827,
       "lng": 80.2707
-    }
+    },
+    "stock": 8
   },
   {
     "id": "p9",

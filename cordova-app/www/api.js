@@ -321,6 +321,16 @@ async function offlineRequest(url, options = {}) {
         return cloneData(item);
     }
 
+    const fertilizerMatch = pathname.match(/^\/api\/fertilizers\/([^/]+)$/);
+    if (fertilizerMatch && method === 'PUT') {
+        const id = decodeURIComponent(fertilizerMatch[1]);
+        const index = (db.fertilizers || []).findIndex((item) => String(item.id) === id);
+        if (index === -1) throw new Error('Fertilizer not found.');
+        db.fertilizers[index] = { ...db.fertilizers[index], ...body };
+        persistOfflineDb();
+        return cloneData(db.fertilizers[index]);
+    }
+
     if (pathname === '/api/cattle-feeds' && method === 'GET') {
         return cloneData(filterByLocation(db.cattleFeeds || [], location));
     }
@@ -333,6 +343,16 @@ async function offlineRequest(url, options = {}) {
         return cloneData(item);
     }
 
+    const feedMatch = pathname.match(/^\/api\/cattle-feeds\/([^/]+)$/);
+    if (feedMatch && method === 'PUT') {
+        const id = decodeURIComponent(feedMatch[1]);
+        const index = (db.cattleFeeds || []).findIndex((item) => String(item.id) === id);
+        if (index === -1) throw new Error('Cattle feed not found.');
+        db.cattleFeeds[index] = { ...db.cattleFeeds[index], ...body };
+        persistOfflineDb();
+        return cloneData(db.cattleFeeds[index]);
+    }
+
     if (pathname === '/api/cattle-products' && method === 'GET') {
         return cloneData(filterByLocation(db.cattleProducts || [], location));
     }
@@ -343,6 +363,16 @@ async function offlineRequest(url, options = {}) {
         db.cattleProducts.push(item);
         persistOfflineDb();
         return cloneData(item);
+    }
+
+    const cattleProductMatch = pathname.match(/^\/api\/cattle-products\/([^/]+)$/);
+    if (cattleProductMatch && method === 'PUT') {
+        const id = decodeURIComponent(cattleProductMatch[1]);
+        const index = (db.cattleProducts || []).findIndex((item) => String(item.id) === id);
+        if (index === -1) throw new Error('Cattle product not found.');
+        db.cattleProducts[index] = { ...db.cattleProducts[index], ...body };
+        persistOfflineDb();
+        return cloneData(db.cattleProducts[index]);
     }
 
     const profileMatch = pathname.match(/^\/api\/profiles\/([^/]+)$/);
@@ -663,6 +693,14 @@ const API = {
         }, {}, 'Failed to add fertilizer');
     },
 
+    async updateFertilizer(id, updates) {
+        return await requestJson(`${API_BASE}/api/fertilizers/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(updates)
+        }, {}, 'Failed to update fertilizer');
+    },
+
     // ===== CATTLE FEEDS =====
     async getCattleFeeds(location) {
         const params = location ? `?location=${encodeURIComponent(location)}` : '';
@@ -677,6 +715,14 @@ const API = {
         }, {}, 'Failed to add cattle feed');
     },
 
+    async updateCattleFeed(id, updates) {
+        return await requestJson(`${API_BASE}/api/cattle-feeds/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(updates)
+        }, {}, 'Failed to update cattle feed');
+    },
+
     // ===== CATTLE PRODUCTS =====
     async getCattleProducts(location) {
         const params = location ? `?location=${encodeURIComponent(location)}` : '';
@@ -689,6 +735,14 @@ const API = {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(item)
         }, {}, 'Failed to add cattle product');
+    },
+
+    async updateCattleProduct(id, updates) {
+        return await requestJson(`${API_BASE}/api/cattle-products/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(updates)
+        }, {}, 'Failed to update cattle product');
     },
 
     // ===== PROFILES =====

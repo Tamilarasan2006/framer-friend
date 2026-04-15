@@ -9,7 +9,7 @@
    (parent overflow/transform can block fixed positioning in some browsers)
 ===================================================================== */
 function hoistProfilePanels() {
-    const panelIds = ['panelTransactions','panelLandRecords','panelChangePass','panelSettings','profilePanelBackdrop'];
+    const panelIds = ['panelTransactions','panelLandRecords','panelChangePass','panelSettings','panelMyProducts','profilePanelBackdrop', 'editProductModal'];
     panelIds.forEach(id => {
         const el = document.getElementById(id);
         if (el && el.parentElement !== document.body) {
@@ -59,6 +59,7 @@ function openProfilePanel(id) {
     if (id === 'panelLandRecords')   renderLandRecordsPanel();
     if (id === 'panelSettings')      renderSettingsPanel();
     if (id === 'panelChangePass')    renderChangePasswordPanel();
+    if (id === 'panelMyProducts')    renderMyProductsPanel();
 }
 
 function closeProfilePanel() {
@@ -539,5 +540,374 @@ async function initProfilePage() {
         }
     } catch (e) {
         console.error('Error initializing profile page:', e);
+    }
+}
+
+/* =====================================================================
+   MY PRODUCTS PANEL
+===================================================================== */
+window._profileProductMap = {};
+
+async function renderMyProductsPanel() {
+    const body = document.getElementById('myProductsBody');
+    if (!body) return;
+    body.innerHTML = '<div class="pp-loading"><i class="fa-solid fa-spinner fa-spin"></i> Loading your products…</div>';
+
+    try {
+        const auth = JSON.parse(localStorage.getItem('ffAuth') || '{}');
+        const userId = auth.userId || '';
+        
+        if (!userId) {
+            body.innerHTML = `
+                <div class="pp-empty">
+                    <i class="fa-solid fa-exclamation-circle" style="font-size:36px;color:#fb8c00;margin-bottom:10px;"></i>
+                    <p>Please log in to view your products.</p>
+                </div>`;
+            return;
+        }
+
+        // Fetch all products
+        let allProducts = [];
+        try {
+            allProducts = await API.getMarketProducts() || [];
+        } catch (err) {
+            console.warn('Error fetching market products:', err);
+            allProducts = [];
+        }
+
+        // Also try to fetch from other product types
+        let cattleProducts = [];
+        let feedProducts = [];
+        let fertilizers = [];
+        
+        try {
+            cattleProducts = await API.getCattleProducts() || [];
+        } catch (err) {
+            console.warn('Error fetching cattle products:', err);
+        }
+
+        try {
+            feedProducts = await API.getCattleFeeds() || [];
+        } catch (err) {
+            console.warn('Error fetching cattle feeds:', err);
+        }
+
+        try {
+            fertilizers = await API.getFertilizers() || [];
+        } catch (err) {
+            console.warn('Error fetching fertilizers:', err);
+        }
+
+        // Filter products by user (check holderName which contains userId)
+        const userProducts = allProducts.filter(p => {
+            const holderName = (p.holderName || '').toLowerCase();
+            return holderName.includes(userId.toLowerCase());
+        });
+
+        const userCattleProducts = cattleProducts.filter(p => {
+            const sellerName = (p.cpSeller || p.sellerName || '').toLowerCase();
+            return sellerName.includes(userId.toLowerCase());
+        });
+
+        const userFeedProducts = feedProducts.filter(p => {
+            const feedSeller = (p.feedSeller || p.sellerName || '').toLowerCase();
+            return feedSeller.includes(userId.toLowerCase());
+        });
+
+        const userFertilizers = fertilizers.filter(p => {
+            const fertSeller = (p.holderName || '').toLowerCase();
+            return fertSeller.includes(userId.toLowerCase());
+        });
+
+        const totalProducts = userProducts.length + userCattleProducts.length + userFeedProducts.length + userFertilizers.length;
+
+        if (totalProducts === 0) {
+            body.innerHTML = `
+                <div class="pp-empty">
+                    <i class="fa-solid fa-box-open" style="font-size:36px;color:#ccc;margin-bottom:10px;"></i>
+                    <p>You haven't listed any products yet.</p>
+                    <p style="font-size:12px;color:#999;margin-top:8px;">Go to the Market, Tools, or Cattle sections to add products.</p>
+                </div>`;
+            return;
+        }
+
+        // Build product list HTML
+        let html = `
+            <div style="display:flex;gap:10px;margin-bottom:15px;padding:10px;background:rgba(0,0,0,0.05);border-radius:8px;">
+                <div style="flex:1;text-align:center;">
+                    <div style="font-size:18px;font-weight:bold;color:var(--primary-green);">${totalProducts}</div>
+                    <div style="font-size:11px;color:#888;">Total Products</div>
+                </div>
+                ${userProducts.length > 0 ? `<div style="flex:1;border-left:1px solid #ddd;text-align:center;">
+                    <div style="font-size:16px;font-weight:bold;color:#2196F3;">${userProducts.length}</div>
+                    <div style="font-size:11px;color:#888;">Market</div>
+                </div>` : ''}
+                ${userCattleProducts.length > 0 ? `<div style="flex:1;border-left:1px solid #ddd;text-align:center;">
+                    <div style="font-size:16px;font-weight:bold;color:#FF9800;">${userCattleProducts.length}</div>
+                    <div style="font-size:11px;color:#888;">Cattle</div>
+                </div>` : ''}
+                ${userFeedProducts.length > 0 ? `<div style="flex:1;border-left:1px solid #ddd;text-align:center;">
+                    <div style="font-size:16px;font-weight:bold;color:#4CAF50;">${userFeedProducts.length}</div>
+                    <div style="font-size:11px;color:#888;">Feeds</div>
+                </div>` : ''}
+                ${userFertilizers.length > 0 ? `<div style="flex:1;border-left:1px solid #ddd;text-align:center;">
+                    <div style="font-size:16px;font-weight:bold;color:#9C27B0;">${userFertilizers.length}</div>
+                    <div style="font-size:11px;color:#888;">Fertilizers</div>
+                </div>` : ''}
+            </div>
+        `;
+
+        // Market Products
+        if (userProducts.length > 0) {
+            html += `<div style="margin-top:15px;"><div style="font-weight:bold;color:#2196F3;margin-bottom:10px;font-size:12px;"><i class="fa-solid fa-leaf"></i> Market Products (${userProducts.length})</div>`;
+            html += userProducts.map(p => {
+                _profileProductMap[p.id] = p;
+                return `
+                <div class="my-product-card">
+                    <div class="mp-left">
+                        <img src="${p.image || 'https://via.placeholder.com/60'}" alt="${p.name}" class="mp-img">
+                    </div>
+                    <div class="mp-center">
+                        <div class="mp-name">${p.name || 'Product'}</div>
+                        <div class="mp-info">₹${Number(p.pricePer100g || p.packPrice || 0).toLocaleString('en-IN')} • ${p.unit || 'unit'}</div>
+                        <div class="mp-meta" style="font-size:11px;color:#888;"><i class="fa-solid fa-location-dot"></i> ${p.location || 'Location'}</div>
+                    </div>
+                    <div class="mp-right">
+                        <div class="mp-stock" style="color:${(p.stock || 0) > 0 ? '#43a047' : '#e53935'};margin-bottom:5px;">
+                            ${(p.stock || 0) > 0 ? `<i class="fa-solid fa-check-circle"></i> In Stock (${p.stock})` : '<i class="fa-solid fa-times-circle"></i> Out'}
+                        </div>
+                        <button class="mp-edit-btn" onclick="openEditProductModal(window._profileProductMap['${p.id}'], 'market')">
+                            <i class="fa-solid fa-pen-to-square"></i> Edit
+                        </button>
+                    </div>
+                </div>
+            `;
+            }).join('');
+            html += '</div>';
+        }
+
+        // Cattle Products
+        if (userCattleProducts.length > 0) {
+            html += `<div style="margin-top:15px;"><div style="font-weight:bold;color:#FF9800;margin-bottom:10px;font-size:12px;"><i class="fa-solid fa-bottle-droplet"></i> Cattle Products (${userCattleProducts.length})</div>`;
+            html += userCattleProducts.map(p => {
+                _profileProductMap[p.id] = p;
+                return `
+                <div class="my-product-card">
+                    <div class="mp-left">
+                        <img src="${p.cpImage || 'https://via.placeholder.com/60'}" alt="${p.cpName}" class="mp-img">
+                    </div>
+                    <div class="mp-center">
+                        <div class="mp-name">${p.cpName || 'Product'}</div>
+                        <div class="mp-info">₹${Number(p.cpPrice || 0).toLocaleString('en-IN')} • ${p.cpUnit || 'unit'}</div>
+                        <div class="mp-meta" style="font-size:11px;color:#888;"><i class="fa-solid fa-location-dot"></i> ${p.cpLocation || 'Location'}</div>
+                    </div>
+                    <div class="mp-right">
+                        <div class="mp-stock" style="color:${(p.cpStock || 0) > 0 ? '#43a047' : '#e53935'};margin-bottom:5px;">
+                            ${(p.cpStock || 0) > 0 ? `<i class="fa-solid fa-check-circle"></i> In Stock (${p.cpStock})` : '<i class="fa-solid fa-times-circle"></i> Out'}
+                        </div>
+                        <button class="mp-edit-btn" onclick="openEditProductModal(window._profileProductMap['${p.id}'], 'cattle')">
+                            <i class="fa-solid fa-pen-to-square"></i> Edit
+                        </button>
+                    </div>
+                </div>
+            `;
+            }).join('');
+            html += '</div>';
+        }
+
+        // Feed Products
+        if (userFeedProducts.length > 0) {
+            html += `<div style="margin-top:15px;"><div style="font-weight:bold;color:#4CAF50;margin-bottom:10px;font-size:12px;"><i class="fa-solid fa-wheat-awn"></i> Cattle Feeds (${userFeedProducts.length})</div>`;
+            html += userFeedProducts.map(p => {
+                _profileProductMap[p.id] = p;
+                return `
+                <div class="my-product-card">
+                    <div class="mp-left">
+                        <img src="${p.feedImage || 'https://via.placeholder.com/60'}" alt="${p.feedName}" class="mp-img">
+                    </div>
+                    <div class="mp-center">
+                        <div class="mp-name">${p.feedName || 'Product'}</div>
+                        <div class="mp-info">₹${Number(p.feedPrice || 0).toLocaleString('en-IN')} • ${p.feedWeight || '0'} ${p.feedWeightUnit || 'unit'}</div>
+                        <div class="mp-meta" style="font-size:11px;color:#888;"><i class="fa-solid fa-location-dot"></i> ${p.feedLocation || 'Location'}</div>
+                    </div>
+                    <div class="mp-right">
+                        <div class="mp-stock" style="color:${(p.feedStock || 0) > 0 ? '#43a047' : '#e53935'};margin-bottom:5px;">
+                            ${(p.feedStock || 0) > 0 ? `<i class="fa-solid fa-check-circle"></i> In Stock (${p.feedStock})` : '<i class="fa-solid fa-times-circle"></i> Out'}
+                        </div>
+                        <button class="mp-edit-btn" onclick="openEditProductModal(window._profileProductMap['${p.id}'], 'feed')">
+                            <i class="fa-solid fa-pen-to-square"></i> Edit
+                        </button>
+                    </div>
+                </div>
+            `;
+            }).join('');
+            html += '</div>';
+        }
+
+        // Fertilizers
+        if (userFertilizers.length > 0) {
+            html += `<div style="margin-top:15px;"><div style="font-weight:bold;color:#9C27B0;margin-bottom:10px;font-size:12px;"><i class="fa-solid fa-flask"></i> Fertilizers (${userFertilizers.length})</div>`;
+            html += userFertilizers.map(p => {
+                _profileProductMap[p.id] = p;
+                return `
+                <div class="my-product-card">
+                    <div class="mp-left">
+                        <img src="${p.image || 'https://via.placeholder.com/60'}" alt="${p.name}" class="mp-img">
+                    </div>
+                    <div class="mp-center">
+                        <div class="mp-name">${p.name || 'Product'}</div>
+                        <div class="mp-info">₹${Number(p.packPrice || 0).toLocaleString('en-IN')} • ${p.packWeight || '0'} ${p.packUnit || 'unit'}</div>
+                        <div class="mp-meta" style="font-size:11px;color:#888;"><i class="fa-solid fa-location-dot"></i> ${p.location || 'Location'}</div>
+                    </div>
+                    <div class="mp-right">
+                        <div class="mp-stock" style="color:${(p.stock || 0) > 0 ? '#43a047' : '#e53935'};margin-bottom:5px;">
+                            ${(p.stock || 0) > 0 ? `<i class="fa-solid fa-check-circle"></i> In Stock (${p.stock})` : '<i class="fa-solid fa-times-circle"></i> Out'}
+                        </div>
+                        <button class="mp-edit-btn" onclick="openEditProductModal(window._profileProductMap['${p.id}'], 'fertilizer')">
+                            <i class="fa-solid fa-pen-to-square"></i> Edit
+                        </button>
+                    </div>
+                </div>
+            `;
+            }).join('');
+            html += '</div>';
+        }
+
+        body.innerHTML = html;
+
+    } catch (err) {
+        body.innerHTML = `<div class="pp-empty"><i class="fa-solid fa-triangle-exclamation" style="color:#e53935"></i> Failed to load: ${err.message}</div>`;
+    }
+}
+
+/* =====================================================================
+   PRODUCT EDIT MODAL
+===================================================================== */
+let _editingProduct = null; // Store product data being edited
+
+function openEditProductModal(product, productType) {
+    _editingProduct = { ...product, type: productType };
+    
+    const modal = document.getElementById('editProductModal');
+    if (!modal) return;
+    
+    // Set title based on product type
+    const titles = {
+        'market': 'Market Product',
+        'cattle': 'Cattle Product',
+        'feed': 'Cattle Feed',
+        'fertilizer': 'Fertilizer'
+    };
+    
+    document.getElementById('editModalTitle').innerHTML = `<i class="fa-solid fa-pen-to-square"></i> Edit ${titles[productType] || 'Product'}`;
+    
+    // Get current stock value based on product type
+    let currentStock = 0;
+    if (productType === 'market') {
+        currentStock = product.stock || 0;
+    } else if (productType === 'cattle') {
+        currentStock = product.cpStock || 0;
+    } else if (productType === 'feed') {
+        currentStock = product.feedStock || 0;
+    } else if (productType === 'fertilizer') {
+        currentStock = product.stock || 0;
+    }
+    
+    document.getElementById('editStockDisplay').textContent = currentStock;
+    document.getElementById('editAddStock').value = '';
+    document.getElementById('editProductPrice').value = '';
+    document.getElementById('editErrorMsg').style.display = 'none';
+    document.getElementById('editErrorMsg').textContent = '';
+    
+    modal.classList.add('show');
+}
+
+function closeEditProductModal(event) {
+    if (event && event.target.id !== 'editProductModal') return;
+    const modal = document.getElementById('editProductModal');
+    if (modal) modal.classList.remove('show');
+    _editingProduct = null;
+}
+
+async function saveProductEdit() {
+    if (!_editingProduct) return;
+    
+    const addStock = parseInt(document.getElementById('editAddStock').value || '0');
+    const newPrice = parseFloat(document.getElementById('editProductPrice').value || '0');
+    const errorEl = document.getElementById('editErrorMsg');
+    
+    if (addStock < 0) {
+        errorEl.textContent = 'Stock quantity must be positive.';
+        errorEl.style.display = 'block';
+        return;
+    }
+    
+    try {
+        const product = _editingProduct;
+        const updates = {};
+        
+        // Prepare update payload based on product type
+        if (product.type === 'market') {
+            const currentStock = parseInt(product.stock || 0);
+            if (addStock > 0) {
+                updates.stock = currentStock + addStock;
+            }
+            if (newPrice > 0) {
+                updates.pricePer100g = newPrice;
+            }
+            if (Object.keys(updates).length > 0) {
+                await API.updateMarketProduct(product.id, updates);
+            }
+        } else if (product.type === 'cattle') {
+            const currentStock = parseInt(product.cpStock || 0);
+            if (addStock > 0) {
+                updates.cpStock = currentStock + addStock;
+            }
+            if (newPrice > 0) {
+                updates.cpPrice = newPrice;
+            }
+            if (Object.keys(updates).length > 0) {
+                await API.updateCattleProduct(product.id, updates);
+            }
+        } else if (product.type === 'feed') {
+            const currentStock = parseInt(product.feedStock || 0);
+            if (addStock > 0) {
+                updates.feedStock = currentStock + addStock;
+            }
+            if (newPrice > 0) {
+                updates.feedPrice = newPrice;
+            }
+            if (Object.keys(updates).length > 0) {
+                await API.updateCattleFeed(product.id, updates);
+            }
+        } else if (product.type === 'fertilizer') {
+            const currentStock = parseInt(product.stock || 0);
+            if (addStock > 0) {
+                updates.stock = currentStock + addStock;
+            }
+            if (newPrice > 0) {
+                updates.packPrice = newPrice;
+            }
+            if (Object.keys(updates).length > 0) {
+                await API.updateFertilizer(product.id, updates);
+            }
+        }
+        
+        if (Object.keys(updates).length === 0) {
+            errorEl.textContent = 'Please enter amount to add or new price.';
+            errorEl.style.display = 'block';
+            return;
+        }
+        
+        // Success - close modal and refresh products list
+        closeEditProductModal();
+        showProfileToast(`Product updated successfully!`, 'success');
+        
+        // Refresh the products list
+        await renderMyProductsPanel();
+        
+    } catch (err) {
+        errorEl.textContent = `Error: ${err.message || 'Failed to update product'}`;
+        errorEl.style.display = 'block';
     }
 }
