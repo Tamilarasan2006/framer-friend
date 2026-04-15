@@ -119,6 +119,175 @@ async function writeDB(filename, data) {
     await fsp.writeFile(filePath, JSON.stringify(data, null, 2), 'utf-8');
 }
 
+// ===== INPUT VALIDATION HELPERS =====
+
+/**
+ * Validates and sanitizes string inputs to prevent injection attacks
+ * @param {any} value - Value to validate
+ * @param {number} minLength - Minimum string length (default 1)
+ * @param {number} maxLength - Maximum string length (default 500)
+ * @returns {string|null} Sanitized string or null if invalid
+ */
+function validateString(value, minLength = 1, maxLength = 500) {
+    if (value === null || value === undefined) return null;
+    const str = String(value).trim();
+    if (str.length < minLength || str.length > maxLength) return null;
+    // Remove potentially dangerous characters but allow basic punctuation
+    return str.replace(/[<>{}|\\^`]/g, '');
+}
+
+/**
+ * Validates email format
+ * @param {any} email - Email to validate
+ * @returns {string|null} Valid email or null
+ */
+function validateEmail(email) {
+    const str = validateString(email, 3, 254);
+    if (!str) return null;
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(str) ? str : null;
+}
+
+/**
+ * Validates phone numbers (10-15 digits)
+ * @param {any} phone - Phone to validate
+ * @returns {string|null} Valid phone or null
+ */
+function validatePhone(phone) {
+    if (!phone) return null;
+    const digits = String(phone).replace(/\D/g, '');
+    return (digits.length >= 10 && digits.length <= 15) ? digits : null;
+}
+
+/**
+ * Validates numeric values
+ * @param {any} value - Value to validate
+ * @param {number} min - Minimum value
+ * @param {number} max - Maximum value
+ * @returns {number|null} Valid number or null
+ */
+function validateNumber(value, min = -Infinity, max = Infinity) {
+    const num = Number(value);
+    return Number.isFinite(num) && num >= min && num <= max ? num : null;
+}
+
+/**
+ * Validates product data
+ * @param {object} product - Product object to validate
+ * @returns {object|null} Validated product or null
+ */
+function validateProduct(product) {
+    if (!product || typeof product !== 'object') return null;
+    
+    const name = validateString(product.name, 2, 100);
+    const description = validateString(product.description, 0, 1000);
+    const price = validateNumber(product.price, 0, 1000000);
+    const quantity = validateNumber(product.quantity, 0, 100000);
+    const location = validateString(product.location, 1, 100);
+    
+    if (!name || price === null || quantity === null || !location) return null;
+    
+    return {
+        name,
+        description: description || '',
+        price,
+        quantity,
+        location,
+        ...(product.image && { image: validateString(product.image, 0, 500) || '' })
+    };
+}
+
+/**
+ * Validates fertilizer/cattle product data
+ * @param {object} item - Item object to validate
+ * @returns {object|null} Validated item or null
+ */
+function validateFertilizerItem(item) {
+    if (!item || typeof item !== 'object') return null;
+    
+    const name = validateString(item.name, 2, 100);
+    const type = validateString(item.type, 2, 50);
+    const price = validateNumber(item.price, 0, 1000000);
+    const location = validateString(item.location, 1, 100);
+    
+    if (!name || !type || price === null || !location) return null;
+    
+    return {
+        name,
+        type,
+        price,
+        location,
+        ...(item.description && { description: validateString(item.description, 0, 500) || '' })
+    };
+}
+
+/**
+ * Validates profile data
+ * @param {object} profile - Profile object to validate
+ * @returns {object|null} Validated profile or null
+ */
+function validateProfile(profile) {
+    if (!profile || typeof profile !== 'object') return null;
+    
+    const validated = {};
+    
+    if (profile.farmName) {
+        const farmName = validateString(profile.farmName, 2, 100);
+        if (farmName) validated.farmName = farmName;
+    }
+    
+    if (profile.location) {
+        const location = validateString(profile.location, 1, 100);
+        if (location) validated.location = location;
+    }
+    
+    if (profile.phone) {
+        const phone = validatePhone(profile.phone);
+        if (!phone) return null; // Fail validation if phone is provided but invalid
+        validated.phone = phone;
+    }
+    
+    if (profile.bio) {
+        const bio = validateString(profile.bio, 0, 500);
+        if (bio) validated.bio = bio;
+    }
+    
+    if (profile.crops) {
+        if (Array.isArray(profile.crops)) {
+            validated.crops = profile.crops
+                .map(c => validateString(c, 1, 50))
+                .filter(c => c !== null);
+        }
+    }
+    
+    return Object.keys(validated).length > 0 ? validated : null;
+}
+
+/**
+ * Validates order data
+ * @param {object} order - Order object to validate
+ * @returns {object|null} Validated order or null
+ */
+function validateOrder(order) {
+    if (!order || typeof order !== 'object') return null;
+    
+    const buyerUserId = validateString(order.buyerUserId, 1, 100);
+    const sellerUserId = validateString(order.sellerUserId, 1, 100);
+    const qty = validateNumber(order.qty, 1, 100000);
+    const totalPrice = validateNumber(order.totalPrice, 0.01, 10000000);
+    
+    if (!buyerUserId || !sellerUserId || qty === null || totalPrice === null) return null;
+    
+    return {
+        buyerUserId,
+        sellerUserId,
+        qty,
+        totalPrice,
+        ...(order.productId && { productId: validateString(order.productId, 1, 50) || '' }),
+        status: (order.status && ['pending', 'completed', 'cancelled'].includes(order.status)) ? order.status : 'pending'
+    };
+}
+
 function normalizeDistrictName(location) {
     const raw = String(location || '').trim();
     if (!raw) return '';
@@ -217,23 +386,40 @@ app.get('/api/users', asyncHandler(async (req, res) => {
 
 app.post('/api/auth/register', asyncHandler(async (req, res) => {
     const { userId, name, email, role, password } = req.body;
-    if (!userId || !name || !email || !role || !password) {
-        return res.status(400).json({ error: 'All fields are required.' });
+    
+    // Validate required fields
+    const validUserId = validateString(userId, 3, 50);
+    const validName = validateString(name, 2, 100);
+    const validEmail = validateEmail(email);
+    const validRole = role && ['farmer', 'buyer', 'seller', 'doctor'].includes(role) ? role : null;
+    const validPassword = validateString(password, 6, 100);
+    
+    if (!validUserId || !validName || !validEmail || !validRole || !validPassword) {
+        return res.status(400).json({ 
+            error: 'Invalid input. Requirements: userId (3-50 chars), name (2-100 chars), valid email, valid role (farmer/buyer/seller/doctor), password (6-100 chars).' 
+        });
     }
 
     const users = await readDB('users.json') || [];
 
-    if (users.some(u => u.userId.toLowerCase() === userId.toLowerCase())) {
+    if (users.some(u => u.userId.toLowerCase() === validUserId.toLowerCase())) {
         return res.status(409).json({ error: 'This User ID is already registered.' });
     }
-    if (users.some(u => u.email.toLowerCase() === email.toLowerCase())) {
+    if (users.some(u => u.email.toLowerCase() === validEmail.toLowerCase())) {
         return res.status(409).json({ error: 'This email is already registered.' });
     }
-    if (users.some(u => u.name.toLowerCase() === name.toLowerCase() && u.role === role)) {
+    if (users.some(u => u.name.toLowerCase() === validName.toLowerCase() && u.role === validRole)) {
         return res.status(409).json({ error: 'An account with this name already exists for this role.' });
     }
 
-    const newUser = { userId, name, email, role, password, registeredAt: new Date().toISOString() };
+    const newUser = { 
+        userId: validUserId, 
+        name: validName, 
+        email: validEmail, 
+        role: validRole, 
+        password: validPassword, 
+        registeredAt: new Date().toISOString() 
+    };
     users.push(newUser);
     await writeDB('users.json', users);
     res.status(201).json({ message: 'Registration successful.' });
@@ -241,20 +427,25 @@ app.post('/api/auth/register', asyncHandler(async (req, res) => {
 
 app.post('/api/auth/login', asyncHandler(async (req, res) => {
     const { userId, password } = req.body;
-    if (!userId || !password) {
+    
+    // Validate input
+    const validUserId = validateString(userId, 1, 100);
+    const validPassword = validateString(password, 1, 100);
+    
+    if (!validUserId || !validPassword) {
         return res.status(400).json({ error: 'User ID and password are required.' });
     }
 
     const ADMIN_ID = 'Tamil';
     const ADMIN_PASSWORD = '1306';
-    if (userId === ADMIN_ID && password === ADMIN_PASSWORD) {
-        return res.json({ role: 'admin', userId, name: 'Admin' });
+    if (validUserId === ADMIN_ID && validPassword === ADMIN_PASSWORD) {
+        return res.json({ role: 'admin', userId: validUserId, name: 'Admin' });
     }
 
     const users = await readDB('users.json') || [];
-    const user = users.find(u => u.userId === userId);
+    const user = users.find(u => u.userId === validUserId);
     if (!user) return res.status(404).json({ error: 'Account not found. Please register first.' });
-    if (user.password !== password) return res.status(401).json({ error: 'Incorrect password.' });
+    if (user.password !== validPassword) return res.status(401).json({ error: 'Incorrect password.' });
 
     res.json({ role: user.role, userId: user.userId, name: user.name });
 }));
@@ -293,8 +484,15 @@ app.get('/api/market-products', asyncHandler(async (req, res) => {
 }));
 
 app.post('/api/market-products', asyncHandler(async (req, res) => {
+    const validated = validateProduct(req.body);
+    if (!validated) {
+        return res.status(400).json({ 
+            error: 'Invalid product data. Required: name (2-100), price (0-1000000), quantity (0-100000), location (1-100).' 
+        });
+    }
+    
     const products = await readDB('market_products.json') || [];
-    const newProduct = { id: `p${Date.now()}`, ...req.body };
+    const newProduct = { id: `p${Date.now()}`, ...validated };
     products.unshift(newProduct);
     await writeDB('market_products.json', products);
     res.status(201).json(newProduct);
@@ -364,10 +562,17 @@ app.get('/api/market-products/nearby', asyncHandler(async (req, res) => {
 }));
 
 app.put('/api/market-products/:id', asyncHandler(async (req, res) => {
+    const validated = validateProduct(req.body);
+    if (!validated) {
+        return res.status(400).json({ 
+            error: 'Invalid product data. Required: name (2-100), price (0-1000000), quantity (0-100000), location (1-100).' 
+        });
+    }
+    
     const products = await readDB('market_products.json') || [];
     const index = products.findIndex(p => p.id === req.params.id);
     if (index === -1) return res.status(404).json({ error: 'Product not found.' });
-    products[index] = { ...products[index], ...req.body };
+    products[index] = { ...products[index], ...validated };
     await writeDB('market_products.json', products);
     res.json(products[index]);
 }));
@@ -394,8 +599,15 @@ app.get('/api/fertilizers', asyncHandler(async (req, res) => {
 }));
 
 app.post('/api/fertilizers', asyncHandler(async (req, res) => {
+    const validated = validateFertilizerItem(req.body);
+    if (!validated) {
+        return res.status(400).json({ 
+            error: 'Invalid fertilizer data. Required: name (2-100), type (2-50), price (0-1000000), location (1-100).' 
+        });
+    }
+    
     const items = await readDB('fertilizers.json') || [];
-    const newItem = { id: `f${Date.now()}`, ...req.body };
+    const newItem = { id: `f${Date.now()}`, ...validated };
     items.unshift(newItem);
     await writeDB('fertilizers.json', items);
     res.status(201).json(newItem);
@@ -421,8 +633,15 @@ app.get('/api/cattle-feeds', asyncHandler(async (req, res) => {
 }));
 
 app.post('/api/cattle-feeds', asyncHandler(async (req, res) => {
+    const validated = validateFertilizerItem(req.body);
+    if (!validated) {
+        return res.status(400).json({ 
+            error: 'Invalid cattle feed data. Required: name (2-100), type (2-50), price (0-1000000), location (1-100).' 
+        });
+    }
+    
     const items = await readDB('cattle_feeds.json') || [];
-    const newItem = { id: `cf${Date.now()}`, ...req.body };
+    const newItem = { id: `cf${Date.now()}`, ...validated };
     items.unshift(newItem);
     await writeDB('cattle_feeds.json', items);
     res.status(201).json(newItem);
@@ -448,8 +667,15 @@ app.get('/api/cattle-products', asyncHandler(async (req, res) => {
 }));
 
 app.post('/api/cattle-products', asyncHandler(async (req, res) => {
+    const validated = validateFertilizerItem(req.body);
+    if (!validated) {
+        return res.status(400).json({ 
+            error: 'Invalid cattle product data. Required: name (2-100), type (2-50), price (0-1000000), location (1-100).' 
+        });
+    }
+    
     const items = await readDB('cattle_products.json') || [];
-    const newItem = { id: `cp${Date.now()}`, ...req.body };
+    const newItem = { id: `cp${Date.now()}`, ...validated };
     items.unshift(newItem);
     await writeDB('cattle_products.json', items);
     res.status(201).json(newItem);
@@ -472,10 +698,22 @@ app.get('/api/profiles/:userId', asyncHandler(async (req, res) => {
 }));
 
 app.put('/api/profiles/:userId', asyncHandler(async (req, res) => {
+    const userId = validateString(req.params.userId, 1, 100);
+    if (!userId) {
+        return res.status(400).json({ error: 'Invalid user ID.' });
+    }
+    
+    const validated = validateProfile(req.body);
+    if (!validated) {
+        return res.status(400).json({ 
+            error: 'Invalid profile data. farmName (2-100), location (1-100), phone (10-15 digits), bio (0-500), crops (array).' 
+        });
+    }
+    
     const profiles = await readDB('profiles.json') || {};
-    profiles[req.params.userId] = { ...(profiles[req.params.userId] || {}), ...req.body };
+    profiles[userId] = { ...(profiles[userId] || {}), ...validated };
     await writeDB('profiles.json', profiles);
-    res.json(profiles[req.params.userId]);
+    res.json(profiles[userId]);
 }));
 
 // ===== GLOBAL: DOCTORS API =====
@@ -635,10 +873,17 @@ app.get('/api/orders', asyncHandler(async (req, res) => {
 }));
 
 app.post('/api/orders', asyncHandler(async (req, res) => {
+    const validated = validateOrder(req.body);
+    if (!validated) {
+        return res.status(400).json({ 
+            error: 'Invalid order data. Required: buyerUserId (1-100), sellerUserId (1-100), qty (1-100000), totalPrice (0.01-10000000).' 
+        });
+    }
+    
     const orders = await readDB('orders.json') || [];
     const newOrder = {
         id: `ord${Date.now()}`,
-        ...req.body,
+        ...validated,
         createdAt: new Date().toISOString()
     };
     orders.push(newOrder);
