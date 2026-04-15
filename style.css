@@ -41,6 +41,21 @@
     box-sizing: border-box;
 }
 
+/* Reset button styles to allow CSS classes to style buttons properly */
+button {
+    background: none;
+    border: none;
+    padding: 0;
+    font-family: inherit;
+    cursor: pointer;
+    text-align: inherit;
+}
+
+button:focus-visible {
+    outline: 2px solid #4caf50;
+    outline-offset: 2px;
+}
+
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     margin: 0;
@@ -1805,6 +1820,101 @@ body {
     justify-content: flex-end;
 }
 
+/* ── My Products Card ──────────────────────────────────── */
+.my-product-card {
+    display: flex;
+    align-items: center;
+    background: #fafafa;
+    border: 1px solid #eee;
+    border-radius: 10px;
+    padding: 10px 12px;
+    gap: 12px;
+    margin-bottom: 10px;
+    transition: box-shadow 0.2s;
+}
+
+.my-product-card:hover {
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.mp-left {
+    flex-shrink: 0;
+}
+
+.mp-img {
+    width: 55px;
+    height: 55px;
+    border-radius: 8px;
+    object-fit: cover;
+    border: 1px solid #e0e0e0;
+}
+
+.mp-center {
+    flex: 1;
+    min-width: 0;
+}
+
+.mp-name {
+    font-size: 13px;
+    font-weight: 700;
+    color: #222;
+    margin-bottom: 3px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.mp-info {
+    font-size: 12px;
+    color: #666;
+    margin-bottom: 3px;
+}
+
+.mp-meta {
+    font-size: 11px;
+    color: #aaa;
+    display: flex;
+    align-items: center;
+    gap: 3px;
+}
+
+.mp-right {
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 8px;
+}
+
+.mp-stock {
+    font-size: 11px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    white-space: nowrap;
+}
+
+.mp-edit-btn {
+    padding: 6px 10px;
+    font-size: 12px;
+    font-weight: 600;
+    background: #FF9800;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.2s, opacity 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    white-space: nowrap;
+}
+
+.mp-edit-btn:hover {
+    background: #F57C00;
+}
+
 /* ── Land Records ─────────────────────────────────────── */
 .land-hero {
     display: flex;
@@ -2162,6 +2272,23 @@ body.dark-mode .tx-product {
     color: #e0e0e0;
 }
 
+body.dark-mode .my-product-card {
+    background: #252525;
+    border-color: #333;
+}
+
+body.dark-mode .mp-name {
+    color: #e0e0e0;
+}
+
+body.dark-mode .mp-info {
+    color: #aaa;
+}
+
+body.dark-mode .mp-edit-btn {
+    background: #FF9800;
+}
+
 body.dark-mode .settings-group {
     background: #252525;
     border-color: #333;
@@ -2186,6 +2313,138 @@ body.dark-mode .pp-settings-btn {
 body.dark-mode .land-hero {
     background: linear-gradient(135deg, #1a2a0a, #1a2a1a);
     border-color: #2a3a2a;
+}
+
+/* ===== EDIT PRODUCT MODAL ===== */
+.edit-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: none;
+    z-index: 9999;
+    align-items: center;
+    justify-content: center;
+}
+
+.edit-modal-overlay.show {
+    display: flex;
+}
+
+.edit-modal {
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    max-width: 400px;
+    width: 90%;
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+.edit-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px;
+    border-bottom: 1px solid #eee;
+}
+
+.edit-modal-header h3 {
+    margin: 0;
+    font-size: 18px;
+    color: #333;
+}
+
+.edit-modal-close {
+    background: none;
+    border: none;
+    font-size: 24px;
+    color: #aaa;
+    cursor: pointer;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.edit-modal-close:hover {
+    color: #333;
+}
+
+.edit-modal-body {
+    padding: 20px;
+}
+
+.edit-modal-footer {
+    display: flex;
+    gap: 10px;
+    padding: 15px 20px;
+    border-top: 1px solid #eee;
+    justify-content: flex-end;
+}
+
+.edit-modal-footer button {
+    flex: 1;
+    padding: 10px 16px;
+    font-size: 13px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+
+.edit-modal-footer button:hover {
+    opacity: 0.9;
+}
+
+.edit-stock-display {
+    padding: 12px 14px;
+    background: #f5f5f5;
+    border-radius: 8px;
+    font-size: 18px;
+    font-weight: 700;
+    color: #2e7d32;
+    border: 1px solid #e0e0e0;
+}
+
+.edit-error {
+    padding: 10px 12px;
+    background: #ffebee;
+    border-left: 4px solid #e53935;
+    border-radius: 4px;
+    color: #c62828;
+    font-size: 12px;
+    margin-top: 10px;
+}
+
+body.dark-mode .edit-modal {
+    background: #1e1e1e;
+    color: #e0e0e0;
+}
+
+body.dark-mode .edit-modal-header {
+    border-bottom-color: #333;
+}
+
+body.dark-mode .edit-modal-header h3 {
+    color: #e0e0e0;
+}
+
+body.dark-mode .edit-modal-footer {
+    border-top-color: #333;
+}
+
+body.dark-mode .edit-stock-display {
+    background: #252525;
+    border-color: #333;
+    color: #4caf50;
+}
+
+body.dark-mode .edit-error {
+    background: #4a1a1a;
+    color: #ff6b6b;
 }
 
 /* ===== CATTLE PAGE STYLES ===== */

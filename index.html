@@ -17,17 +17,17 @@
             <span id="header-title">FARMERS FRIEND</span>
             <i class="fa-solid fa-tractor tractor-icon"></i>
         </h1>
-<div class="profile-btn-top" onclick="showTab('profile', 'MY PROFILE', null)">
+<button class="profile-btn-top" aria-label="View user profile" onclick="showTab('profile', 'MY PROFILE', null)">
             <img id="headerProfileImg" src="" alt="" style="display:none; width:100%; height:100%; border-radius:50%; object-fit:cover;">
             <i class="fa-solid fa-user" id="headerProfileIcon" style="color: var(--header-text); font-size: 18px;"></i>
-        </div>
+        </button>
     </header>
 
     <!-- Floating Cart Button (bottom-right) -->
-    <div id="cartFab" class="cart-fab" onclick="toggleCartPanel()">
+    <button id="cartFab" class="cart-fab" aria-label="Toggle shopping cart" onclick="toggleCartPanel()">
         <i class="fa-solid fa-cart-shopping"></i>
         <span id="cartBadge" class="cart-badge" style="display:none;">0</span>
-    </div>
+    </button>
 
     <!-- Cart Slide-Out Panel -->
     <div id="cartPanel" class="cart-panel">
@@ -86,10 +86,10 @@
             </button>
         </div>
     </div>
-    <div id="cartOverlay" class="cart-overlay" onclick="closeCartPanelFromOverlay()"></div>
+    <div id="cartOverlay" class="cart-overlay" role="button" tabindex="0" aria-label="Close cart" onclick="closeCartPanelFromOverlay()" onkeypress="if(event.key==='Enter'||event.key===' ')closeCartPanelFromOverlay()"></div>
 
     <!-- Crop Rates Slide-Up Panel -->
-    <div id="cropRatesOverlay" class="cart-overlay" onclick="closeCropRatesPanel()"></div>
+    <div id="cropRatesOverlay" class="cart-overlay" role="button" tabindex="0" aria-label="Close crop rates" onclick="closeCropRatesPanel()" onkeypress="if(event.key==='Enter'||event.key===' ')closeCropRatesPanel()"></div>
     <div id="cropRatesPanel" class="crop-rates-panel">
         <div class="crop-rates-header">
             <h3><i class="fa-solid fa-wheat-awn"></i> Market Crop Rates</h3>
@@ -109,12 +109,12 @@
         
         <section id="home" class="section active">
             <div class="dashboard-row">
-                <div class="dash-card card-green" onclick="showCropRatesPanel()" style="cursor:pointer;">
+                <button class="dash-card card-green" onclick="showCropRatesPanel()" aria-label="View today's crop rates">
                     <span class="dash-title">TODAY'S CROP RATES <i class="fa-solid fa-arrow-up-right-from-square" style="font-size:11px;opacity:0.8;"></i></span>
                     <span class="crop-price" id="homeSingleCropName">PADDY (COMMON)</span>
                     <span class="sub-text" id="homeSingleCropPrice">₹2,300 / QUINTAL</span>
                     <span style="font-size:11px;opacity:0.75;display:block;margin-top:6px;">Tap to see all rates →</span>
-                </div>
+                </button>
                 <div class="dash-card card-blue">
                     <span class="dash-title">MARKET PRICE TRENDS</span>
                     <div class="graph-container">
@@ -1170,6 +1170,14 @@
                         </div>
                         <i class="fa-solid fa-chevron-right menu-item-arrow"></i>
                     </div>
+                    <div class="menu-item" onclick="openProfilePanel('panelMyProducts')">
+                        <div class="menu-item-icon menu-icon-green"><i class="fa-solid fa-box"></i></div>
+                        <div class="menu-item-text">
+                            <strong>My Products</strong>
+                            <small>View your listed products</small>
+                        </div>
+                        <i class="fa-solid fa-chevron-right menu-item-arrow"></i>
+                    </div>
                     <div class="menu-item menu-item-danger" onclick="logout()">
                         <div class="menu-item-icon menu-icon-red"><i class="fa-solid fa-right-from-bracket"></i></div>
                         <div class="menu-item-text">
@@ -1241,8 +1249,56 @@
                 </div>
             </div>
 
+            <!-- My Products -->
+            <div id="panelMyProducts" class="profile-panel">
+                <div class="pp-header">
+                    <button class="pp-back-btn" onclick="closeProfilePanel()">
+                        <i class="fa-solid fa-arrow-left"></i>
+                    </button>
+                    <span class="pp-title"><i class="fa-solid fa-box"></i> My Products</span>
+                </div>
+                <div class="pp-body" id="myProductsBody">
+                    <div class="pp-loading"><i class="fa-solid fa-spinner fa-spin"></i> Loading…</div>
+                </div>
+            </div>
+
             <!-- Panel Backdrop -->
             <div id="profilePanelBackdrop" class="profile-panel-backdrop" onclick="closeProfilePanel()"></div>
+
+            <!-- Edit Product Modal -->
+            <div id="editProductModal" class="edit-modal-overlay" onclick="closeEditProductModal(event)">
+                <div class="edit-modal" onclick="event.stopPropagation()">
+                    <div class="edit-modal-header">
+                        <h3 id="editModalTitle"><i class="fa-solid fa-pen-to-square"></i> Edit Product</h3>
+                        <button class="edit-modal-close" onclick="closeEditProductModal()">
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>
+                    </div>
+                    <div class="edit-modal-body">
+                        <div class="form-group">
+                            <label>CURRENT STOCK</label>
+                            <div class="edit-stock-display" id="editStockDisplay">0</div>
+                        </div>
+                        <div class="form-group">
+                            <label>ADD QUANTITY <span class="mf-required">*</span></label>
+                            <input type="number" id="editAddStock" class="market-input" min="0" step="1" placeholder="e.g. 20">
+                        </div>
+                        <div class="form-group">
+                            <label>PRODUCT PRICE (₹) <span class="mf-optional">(optional - to update)</span></label>
+                            <input type="number" id="editProductPrice" class="market-input" min="0" step="0.01" placeholder="e.g. 250">
+                        </div>
+                        <div id="editErrorMsg" class="edit-error" style="display:none;"></div>
+                    </div>
+                    <div class="edit-modal-footer">
+                        <button class="verify-btn" style="background:#e53935;" onclick="closeEditProductModal()">
+                            <i class="fa-solid fa-xmark"></i> Cancel
+                        </button>
+                        <button class="verify-btn" style="background:var(--primary-green);" onclick="saveProductEdit()">
+                            <i class="fa-solid fa-check"></i> Update Stock
+                        </button>
+                    </div>
+                </div>
+            </div>
 
         </section>
 
